@@ -33,12 +33,23 @@ let PromotionsService = class PromotionsService {
         if (createPromotionDto.type === 'PERCENTAGE' && createPromotionDto.value > 100) {
             throw new common_1.BadRequestException('Le pourcentage ne peut pas dépasser 100%');
         }
+        const valueDecimal = createPromotionDto.value.toString();
+        const minPurchaseDecimal = createPromotionDto.minPurchase
+            ? createPromotionDto.minPurchase.toString()
+            : null;
         return this.prisma.promotion.create({
             data: {
-                ...createPromotionDto,
+                name: createPromotionDto.name,
+                description: createPromotionDto.description || null,
                 code: code || null,
+                type: createPromotionDto.type,
+                value: valueDecimal,
+                banniere: createPromotionDto.banniere || null,
                 startDate: new Date(createPromotionDto.startDate),
                 endDate: new Date(createPromotionDto.endDate),
+                isActive: createPromotionDto.isActive ?? true,
+                minPurchase: minPurchaseDecimal,
+                maxUses: createPromotionDto.maxUses || null,
             },
             include: {
                 products: {
@@ -124,9 +135,35 @@ let PromotionsService = class PromotionsService {
         if (type === 'PERCENTAGE' && value > 100) {
             throw new common_1.BadRequestException('Le pourcentage ne peut pas dépasser 100%');
         }
-        const updateData = { ...updatePromotionDto };
+        const updateData = {};
+        if (updatePromotionDto.name !== undefined) {
+            updateData.name = updatePromotionDto.name;
+        }
+        if (updatePromotionDto.description !== undefined) {
+            updateData.description = updatePromotionDto.description || null;
+        }
         if (updatePromotionDto.code !== undefined) {
             updateData.code = code || null;
+        }
+        if (updatePromotionDto.type !== undefined) {
+            updateData.type = updatePromotionDto.type;
+        }
+        if (updatePromotionDto.banniere !== undefined) {
+            updateData.banniere = updatePromotionDto.banniere || null;
+        }
+        if (updatePromotionDto.isActive !== undefined) {
+            updateData.isActive = updatePromotionDto.isActive;
+        }
+        if (updatePromotionDto.maxUses !== undefined) {
+            updateData.maxUses = updatePromotionDto.maxUses || null;
+        }
+        if (updatePromotionDto.value !== undefined) {
+            updateData.value = updatePromotionDto.value.toString();
+        }
+        if (updatePromotionDto.minPurchase !== undefined) {
+            updateData.minPurchase = updatePromotionDto.minPurchase
+                ? updatePromotionDto.minPurchase.toString()
+                : null;
         }
         if (updatePromotionDto.startDate) {
             updateData.startDate = new Date(updatePromotionDto.startDate);
