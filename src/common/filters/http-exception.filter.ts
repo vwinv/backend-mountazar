@@ -75,11 +75,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error = errorName || 'Error';
     }
 
-    // Logger l'erreur pour le débogage
-    this.logger.error(
-      `${request.method} ${request.url} - ${status} - ${message}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    // 4xx = erreur client (attendu), 5xx = erreur serveur
+    const logLine = `${request.method} ${request.url} - ${status} - ${message}`;
+    if (status >= 500) {
+      this.logger.error(logLine, exception instanceof Error ? exception.stack : undefined);
+    } else if (status >= 400) {
+      this.logger.warn(logLine);
+    } else {
+      this.logger.log(logLine);
+    }
 
     // En production, ne pas exposer les détails des erreurs internes
     const isDevelopment = process.env.NODE_ENV !== 'production';

@@ -26,19 +26,19 @@ let ReviewsController = class ReviewsController {
     }
     async create(createReviewDto, user) {
         if (user.role !== client_1.UserRole.CUSTOMER) {
-            throw new Error('Seuls les clients peuvent laisser des avis');
+            throw new common_1.ForbiddenException('Seuls les clients peuvent laisser des avis');
         }
         return this.reviewsService.create(user.id, createReviewDto.productId, createReviewDto);
     }
     async createOrUpdateRating(body, user) {
         if (user.role !== client_1.UserRole.CUSTOMER) {
-            throw new Error('Seuls les clients peuvent noter les produits');
+            throw new common_1.ForbiddenException('Seuls les clients peuvent noter les produits');
         }
         return this.reviewsService.createOrUpdateRating(user.id, body.productId, body.rating);
     }
     async updateComment(body, user) {
         if (user.role !== client_1.UserRole.CUSTOMER) {
-            throw new Error('Seuls les clients peuvent commenter les produits');
+            throw new common_1.ForbiddenException('Seuls les clients peuvent commenter les produits');
         }
         return this.reviewsService.updateComment(user.id, body.productId, body.comment);
     }
@@ -47,7 +47,7 @@ let ReviewsController = class ReviewsController {
     }
     async findUserReview(productId, user) {
         if (user.role !== client_1.UserRole.CUSTOMER) {
-            throw new Error('Seuls les clients peuvent consulter leurs avis');
+            throw new common_1.ForbiddenException('Seuls les clients peuvent consulter leurs avis');
         }
         return this.reviewsService.findUserReview(user.id, productId);
     }

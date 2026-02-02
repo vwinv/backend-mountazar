@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, ParseIntPipe, Param, Get, Patch } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, ParseIntPipe, Param, Get, Patch, ForbiddenException } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewCommentDto } from './dto/update-review.dto';
@@ -18,7 +18,7 @@ export class ReviewsController {
   ) {
     // Vérifier que l'utilisateur est un client
     if (user.role !== UserRole.CUSTOMER) {
-      throw new Error('Seuls les clients peuvent laisser des avis');
+      throw new ForbiddenException('Seuls les clients peuvent laisser des avis');
     }
 
     return this.reviewsService.create(user.id, createReviewDto.productId, createReviewDto);
@@ -32,7 +32,7 @@ export class ReviewsController {
   ) {
     // Vérifier que l'utilisateur est un client
     if (user.role !== UserRole.CUSTOMER) {
-      throw new Error('Seuls les clients peuvent noter les produits');
+      throw new ForbiddenException('Seuls les clients peuvent noter les produits');
     }
 
     return this.reviewsService.createOrUpdateRating(user.id, body.productId, body.rating);
@@ -46,7 +46,7 @@ export class ReviewsController {
   ) {
     // Vérifier que l'utilisateur est un client
     if (user.role !== UserRole.CUSTOMER) {
-      throw new Error('Seuls les clients peuvent commenter les produits');
+      throw new ForbiddenException('Seuls les clients peuvent commenter les produits');
     }
 
     return this.reviewsService.updateComment(user.id, body.productId, body.comment);
@@ -65,7 +65,7 @@ export class ReviewsController {
   ) {
     // Vérifier que l'utilisateur est un client
     if (user.role !== UserRole.CUSTOMER) {
-      throw new Error('Seuls les clients peuvent consulter leurs avis');
+      throw new ForbiddenException('Seuls les clients peuvent consulter leurs avis');
     }
 
     return this.reviewsService.findUserReview(user.id, productId);

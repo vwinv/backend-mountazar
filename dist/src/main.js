@@ -42,9 +42,38 @@ const express = __importStar(require("express"));
 const http_exception_filter_1 = require("./common/filters/http-exception.filter");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'https://www.mountazar.com',
+        'https://mountazar.com',
+        ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ];
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: (origin, callback) => {
+            if (!origin) {
+                return callback(null, true);
+            }
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+            }
+            else {
+                if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+                    callback(null, true);
+                }
+                else {
+                    callback(new Error('Not allowed by CORS'));
+                }
+            }
+        },
         credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+    app.use((req, res, next) => {
+        if (req.method === 'GET' && (req.path === '/favicon.ico' || req.path === '/robots.txt')) {
+            return res.status(204).end();
+        }
+        next();
     });
     app.use(express.json({ limit: '50mb' }));
     app.use(express.urlencoded({ limit: '50mb', extended: true }));

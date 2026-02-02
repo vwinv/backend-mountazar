@@ -42,6 +42,14 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
+  // Répondre aux requêtes navigateur courantes sans faire remonter une 404 à Nest
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && (req.path === '/favicon.ico' || req.path === '/robots.txt')) {
+      return res.status(204).end();
+    }
+    next();
+  });
+
   // Augmenter la limite de taille du body JSON (50MB)
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));

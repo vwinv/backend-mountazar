@@ -65,7 +65,16 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             }
             error = errorName || 'Error';
         }
-        this.logger.error(`${request.method} ${request.url} - ${status} - ${message}`, exception instanceof Error ? exception.stack : undefined);
+        const logLine = `${request.method} ${request.url} - ${status} - ${message}`;
+        if (status >= 500) {
+            this.logger.error(logLine, exception instanceof Error ? exception.stack : undefined);
+        }
+        else if (status >= 400) {
+            this.logger.warn(logLine);
+        }
+        else {
+            this.logger.log(logLine);
+        }
         const isDevelopment = process.env.NODE_ENV !== 'production';
         response.status(status).json({
             statusCode: status,

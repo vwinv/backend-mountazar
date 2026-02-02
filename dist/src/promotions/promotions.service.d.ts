@@ -67,8 +67,8 @@ export declare class PromotionsService {
         products: ({
             product: {
                 id: number;
-                name: string;
                 image: string | null;
+                name: string;
                 price: import("@prisma/client/runtime/library").Decimal;
             };
         } & {
@@ -144,8 +144,8 @@ export declare class PromotionsService {
         products: ({
             product: {
                 id: number;
-                name: string;
                 image: string | null;
+                name: string;
                 price: import("@prisma/client/runtime/library").Decimal;
             };
         } & {
@@ -175,8 +175,8 @@ export declare class PromotionsService {
         products: ({
             product: {
                 id: number;
-                name: string;
                 image: string | null;
+                name: string;
                 price: import("@prisma/client/runtime/library").Decimal;
             };
         } & {
