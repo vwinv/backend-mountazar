@@ -4,6 +4,9 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export declare class ProductsService {
     private readonly prisma;
     constructor(prisma: PrismaService);
+    generateDescription(keywords: string): Promise<{
+        description: string;
+    }>;
     create(createProductDto: CreateProductDto): Promise<({
         category: {
             id: number;
@@ -54,6 +57,9 @@ export declare class ProductsService {
     findAll(): Promise<{
         images: any;
         subCategory: any;
+        maxRating: number;
+        averageRating: number | null;
+        reviewsCount: any;
         category: {
             id: number;
             name: string;

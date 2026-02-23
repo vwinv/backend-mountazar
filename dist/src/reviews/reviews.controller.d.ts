@@ -14,4 +14,6 @@ export declare class ReviewsController {
     }, user: any): Promise<any>;
     findAllApprovedByProduct(productId: number): Promise<any>;
     findUserReview(productId: number, user: any): Promise<any>;
+    findAll(): Promise<any>;
+    delete(id: number): Promise<any>;
 }

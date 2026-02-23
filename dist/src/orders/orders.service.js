@@ -12,10 +12,56 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const QUOTE_CATEGORY_NAMES = ['rideaux'];
 let OrdersService = class OrdersService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
+    }
+    async getCustomerShippingAddresses(userId) {
+        return this.prisma.shippingAddress.findMany({
+            where: { userId },
+            orderBy: { id: 'desc' },
+        });
+    }
+    async saveCustomerShippingAddress(userId, payload) {
+        const normalized = {
+            firstName: (payload.firstName || '').trim(),
+            lastName: (payload.lastName || '').trim(),
+            address: (payload.address || '').trim(),
+            city: (payload.city || '').trim(),
+            postalCode: (payload.postalCode || '').trim() || null,
+            country: (payload.country || 'Sénégal').trim(),
+            phone: (payload.phone || '').trim() || null,
+        };
+        const existing = await this.prisma.shippingAddress.findFirst({
+            where: {
+                userId,
+                firstName: normalized.firstName,
+                lastName: normalized.lastName,
+                address: normalized.address,
+                city: normalized.city,
+                postalCode: normalized.postalCode,
+                country: normalized.country,
+                phone: normalized.phone,
+            },
+        });
+        if (existing) {
+            return existing;
+        }
+        return this.prisma.shippingAddress.create({
+            data: {
+                userId,
+                firstName: normalized.firstName,
+                lastName: normalized.lastName,
+                address: normalized.address,
+                city: normalized.city,
+                postalCode: normalized.postalCode,
+                country: normalized.country,
+                phone: normalized.phone,
+                isDefault: false,
+            },
+        });
     }
     async create(createOrderDto) {
         if (!createOrderDto.userId) {
@@ -54,9 +100,10 @@ let OrdersService = class OrdersService {
             if (!product) {
                 throw new common_1.NotFoundException(`Produit avec l'ID ${item.productId} introuvable`);
             }
-            const isRideaux = product.category?.name.toLowerCase() === 'rideaux';
-            if (isRideaux && !createOrderDto.requiresQuote) {
-                throw new common_1.BadRequestException('Les produits de la catégorie "rideaux" nécessitent une demande de devis');
+            const categoryName = product.category?.name?.toLowerCase();
+            const needsQuote = !!categoryName && QUOTE_CATEGORY_NAMES.includes(categoryName);
+            if (needsQuote && !createOrderDto.requiresQuote) {
+                throw new common_1.BadRequestException('Ce produit nécessite une demande de devis');
             }
             const price = item.price || Number(product.price);
             const itemTotal = price * item.quantity;
@@ -69,7 +116,7 @@ let OrdersService = class OrdersService {
                 customization: item.customization || null,
             });
         }
-        let status = 'PENDING';
+        let status = 'PROCESSING';
         if (createOrderDto.requiresQuote) {
             status = 'QUOTE_REQUESTED';
         }
@@ -259,6 +306,9 @@ let OrdersService = class OrdersService {
         if (order.invoice?.payment?.status === 'COMPLETED') {
             throw new common_1.BadRequestException('Impossible d\'annuler une commande déjà payée');
         }
+        if (order.status !== 'PROCESSING') {
+            throw new common_1.BadRequestException('Seules les commandes en cours de traitement peuvent être annulées');
+        }
         return this.prisma.order.update({
             where: { id },
             data: { status: 'CANCELLED' },
@@ -295,20 +345,57 @@ let OrdersService = class OrdersService {
                         payment: true,
                     },
                 },
+                quote: true,
             },
         });
         if (!order) {
             throw new common_1.NotFoundException(`Commande avec l'ID ${id} introuvable`);
         }
-        if (!order.invoice) {
-            throw new common_1.BadRequestException('Aucune facture associée à cette commande');
+        let invoice = order.invoice;
+        if (!invoice) {
+            let subtotal;
+            let shipping = 0;
+            let discount = 0;
+            let total;
+            let quoteId = null;
+            if (order.quote) {
+                const q = order.quote;
+                const details = q.quoteDetails || {};
+                const items = Array.isArray(details.items) ? details.items : [];
+                const itemsTotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+                const transportFee = Number(details.transportFee) || 0;
+                discount = Number(details.discount) || 0;
+                subtotal = itemsTotal;
+                total =
+                    (q.total !== undefined ? Number(q.total) : NaN) ||
+                        itemsTotal + transportFee - discount;
+                shipping = transportFee;
+                quoteId = q.id;
+            }
+            else {
+                total = Number(order.total);
+                subtotal = total;
+            }
+            const invoiceNumber = `INV-${Date.now()}-${order.id}`;
+            invoice = await this.prisma.invoice.create({
+                data: {
+                    invoiceNumber,
+                    orderId: order.id,
+                    quoteId: quoteId ?? undefined,
+                    subtotal,
+                    tax: 0,
+                    shipping,
+                    discount,
+                    total,
+                },
+            });
         }
-        if (order.invoice.payment?.status === 'COMPLETED') {
+        if (invoice.payment?.status === 'COMPLETED') {
             throw new common_1.BadRequestException('Le paiement a déjà été validé');
         }
-        if (order.invoice.payment) {
+        if (invoice.payment) {
             await this.prisma.payment.update({
-                where: { id: order.invoice.payment.id },
+                where: { id: invoice.payment.id },
                 data: {
                     status: 'COMPLETED',
                     paidAt: new Date(),
@@ -318,17 +405,101 @@ let OrdersService = class OrdersService {
         else {
             await this.prisma.payment.create({
                 data: {
-                    invoiceId: order.invoice.id,
-                    amount: order.invoice.total,
+                    invoiceId: invoice.id,
+                    amount: invoice.total,
                     method: 'OTHER',
                     status: 'COMPLETED',
                     paidAt: new Date(),
                 },
             });
         }
+        if (order.quote) {
+            await this.prisma.quote.update({
+                where: { id: order.quote.id },
+                data: {
+                    status: 'PAID',
+                },
+            });
+        }
         return this.prisma.order.update({
             where: { id },
-            data: { status: 'PROCESSING' },
+            data: { status: 'COMPLETED' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                items: {
+                    include: {
+                        product: true,
+                    },
+                },
+                shippingAddress: true,
+                quote: true,
+                invoice: {
+                    include: {
+                        payment: true,
+                    },
+                },
+            },
+        });
+    }
+    async startDelivery(id) {
+        const order = await this.prisma.order.findUnique({
+            where: { id },
+            include: { invoice: true },
+        });
+        if (!order) {
+            throw new common_1.NotFoundException(`Commande avec l'ID ${id} introuvable`);
+        }
+        if (order.invoice) {
+            throw new common_1.BadRequestException('Cette commande a déjà une facture');
+        }
+        if (order.status !== 'PROCESSING') {
+            throw new common_1.BadRequestException('Seules les commandes en cours de traitement peuvent démarrer la livraison');
+        }
+        return this.prisma.order.update({
+            where: { id },
+            data: { status: 'SHIPPED' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                items: {
+                    include: { product: true },
+                },
+                shippingAddress: true,
+                quote: true,
+                invoice: { include: { payment: true } },
+            },
+        });
+    }
+    async completeOrder(id) {
+        const order = await this.prisma.order.findUnique({
+            where: { id },
+            include: { invoice: true },
+        });
+        if (!order) {
+            throw new common_1.NotFoundException(`Commande avec l'ID ${id} introuvable`);
+        }
+        if (order.invoice) {
+            throw new common_1.BadRequestException('Cette commande a déjà une facture');
+        }
+        if (order.status !== 'SHIPPED') {
+            throw new common_1.BadRequestException('Démarrez d\'abord la livraison avant de terminer la commande');
+        }
+        return this.prisma.order.update({
+            where: { id },
+            data: { status: 'DELIVERED' },
             include: {
                 user: {
                     select: {

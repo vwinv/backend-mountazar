@@ -49,6 +49,18 @@ export class UpdateParametrageDto {
 
   @IsOptional()
   @IsString()
+  contactPhoneMobile?: string;
+
+  @IsOptional()
+  @IsString()
+  contactPhoneFax?: string;
+
+  @IsOptional()
+  @IsString()
+  contactWhatsapp?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
 
   @IsOptional()

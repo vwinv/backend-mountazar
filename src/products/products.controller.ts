@@ -52,6 +52,13 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
+  @Post('generate-description')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  generateDescription(@Body() body: { keywords: string }) {
+    return this.productsService.generateDescription(body.keywords ?? '');
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

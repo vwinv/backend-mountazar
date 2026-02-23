@@ -2,10 +2,54 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import OpenAI from 'openai';
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Génère une description produit (max 10 lignes) à partir de mots-clés via OpenAI.
+   */
+  async generateDescription(keywords: string): Promise<{ description: string }> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new BadRequestException(
+        'Génération IA non configurée. Définissez OPENAI_API_KEY dans les variables d\'environnement.',
+      );
+    }
+    const trimmed = keywords?.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Veuillez fournir au moins un mot-clé.');
+    }
+
+    const openai = new OpenAI({ apiKey });
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Tu es un rédacteur e-commerce. Tu génères des descriptions de produits en français, professionnelles et vendeuses. Réponds uniquement avec le texte de la description, sans titre ni préambule. Maximum 10 lignes.',
+        },
+        {
+          role: 'user',
+          content: `Génère une description produit (max 10 lignes) à partir de ces mots-clés : ${trimmed}`,
+        },
+      ],
+      max_tokens: 400,
+    });
+
+    const text = completion.choices[0]?.message?.content?.trim();
+    if (!text) {
+      throw new BadRequestException('La génération n\'a pas renvoyé de texte.');
+    }
+
+    // S'assurer qu'on ne dépasse pas ~10 lignes
+    const lines = text.split(/\r?\n/).filter((l) => l.trim());
+    const description = lines.slice(0, 10).join('\n').trim();
+    return { description };
+  }
 
   async create(createProductDto: CreateProductDto) {
     const { images, categoryId, subCategoryId, ...restData } = createProductDto;
@@ -89,7 +133,7 @@ export class ProductsService {
       orderBy: { createdAt: 'desc' },
     });
     
-    // Charger les images et sous-catégories séparément pour chaque produit
+    // Charger les images, sous-catégories et statistiques d'avis pour chaque produit
     const productsWithImages = await Promise.all(
       products.map(async (product) => {
         const images = await (this.prisma as any).productImage.findMany({
@@ -111,8 +155,29 @@ export class ProductsService {
               },
             })
           : null;
+
+        // Statistiques d'avis (avis approuvés uniquement)
+        const reviews = await (this.prisma as any).review.findMany({
+          where: {
+            productId: product.id,
+            isApproved: true,
+          },
+          select: {
+            rating: true,
+          },
+        });
+
+        let maxRating = 0;
+        let averageRating: number | null = null;
+        let reviewsCount = reviews.length;
+
+        if (reviews.length > 0) {
+          const ratings = reviews.map((r: any) => r.rating);
+          maxRating = Math.max(...ratings);
+          averageRating = ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length;
+        }
         
-        return { ...product, images, subCategory };
+        return { ...product, images, subCategory, maxRating, averageRating, reviewsCount };
       })
     );
     

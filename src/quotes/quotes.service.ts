@@ -112,6 +112,47 @@ export class QuotesService {
                 },
               },
             },
+            shippingAddress: true,
+            invoice: {
+              include: {
+                payment: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Récupère tous les devis du client connecté (via l'utilisateur de la commande).
+   */
+  async findAllForCustomer(userId: number) {
+    return (this.prisma as any).quote.findMany({
+      where: {
+        order: {
+          userId,
+        },
+      },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  include: {
+                    category: true,
+                  },
+                },
+              },
+            },
+            shippingAddress: true,
+            invoice: {
+              include: {
+                payment: true,
+              },
+            },
           },
         },
       },
@@ -180,9 +221,15 @@ export class QuotesService {
       // Mettre à jour le statut de la commande en fonction du statut du devis
       if (updateQuoteDto.status === 'APPROVED') {
         updateData.approvedAt = new Date();
+        // Nouveau comportement :
+        // - la commande sort du flux "demande de devis"
+        // - elle devient une commande classique "en cours de traitement"
         await this.prisma.order.update({
           where: { id: existing.orderId },
-          data: { status: 'QUOTE_APPROVED' as any },
+          data: {
+            status: 'PROCESSING' as any,
+            requiresQuote: false,
+          },
         });
       } else if (updateQuoteDto.status === 'REJECTED') {
         await this.prisma.order.update({
@@ -248,10 +295,15 @@ export class QuotesService {
       },
     });
 
-    // Mettre à jour le statut de la commande
+    // Mettre à jour le statut de la commande :
+    // - elle sort du flux "demande de devis"
+    // - elle devient une commande classique "en cours de traitement"
     await this.prisma.order.update({
       where: { id: quote.orderId },
-      data: { status: 'QUOTE_APPROVED' as any },
+      data: {
+        status: 'PROCESSING' as any,
+        requiresQuote: false,
+      },
     });
 
     return updated;

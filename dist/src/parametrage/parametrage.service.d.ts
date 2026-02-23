@@ -19,6 +19,9 @@ export declare class ParametrageService {
         galleryImages: import(".prisma/client").Prisma.JsonValue | null;
         contactEmail: string | null;
         contactPhone: string | null;
+        contactPhoneMobile: string | null;
+        contactPhoneFax: string | null;
+        contactWhatsapp: string | null;
         address: string | null;
         facebookUrl: string | null;
         instagramUrl: string | null;
@@ -51,6 +54,9 @@ export declare class ParametrageService {
         galleryImages: import(".prisma/client").Prisma.JsonValue | null;
         contactEmail: string | null;
         contactPhone: string | null;
+        contactPhoneMobile: string | null;
+        contactPhoneFax: string | null;
+        contactWhatsapp: string | null;
         address: string | null;
         facebookUrl: string | null;
         instagramUrl: string | null;

@@ -109,6 +109,43 @@ let QuotesService = class QuotesService {
                                 },
                             },
                         },
+                        shippingAddress: true,
+                        invoice: {
+                            include: {
+                                payment: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+    async findAllForCustomer(userId) {
+        return this.prisma.quote.findMany({
+            where: {
+                order: {
+                    userId,
+                },
+            },
+            include: {
+                order: {
+                    include: {
+                        items: {
+                            include: {
+                                product: {
+                                    include: {
+                                        category: true,
+                                    },
+                                },
+                            },
+                        },
+                        shippingAddress: true,
+                        invoice: {
+                            include: {
+                                payment: true,
+                            },
+                        },
                     },
                 },
             },
@@ -171,7 +208,10 @@ let QuotesService = class QuotesService {
                 updateData.approvedAt = new Date();
                 await this.prisma.order.update({
                     where: { id: existing.orderId },
-                    data: { status: 'QUOTE_APPROVED' },
+                    data: {
+                        status: 'PROCESSING',
+                        requiresQuote: false,
+                    },
                 });
             }
             else if (updateQuoteDto.status === 'REJECTED') {
@@ -233,7 +273,10 @@ let QuotesService = class QuotesService {
         });
         await this.prisma.order.update({
             where: { id: quote.orderId },
-            data: { status: 'QUOTE_APPROVED' },
+            data: {
+                status: 'PROCESSING',
+                requiresQuote: false,
+            },
         });
         return updated;
     }

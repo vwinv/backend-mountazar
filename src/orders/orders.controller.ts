@@ -48,6 +48,46 @@ export class OrdersController {
     return this.ordersService.findByUserId(user.id);
   }
 
+  // Récupérer les adresses de livraison du client connecté
+  @Get('shipping-addresses')
+  @UseGuards(JwtAuthGuard)
+  getCustomerShippingAddresses(@CurrentUser() user: any) {
+    if (user.role !== UserRole.CUSTOMER) {
+      throw new ForbiddenException('Cette route est réservée aux clients');
+    }
+    return this.ordersService.getCustomerShippingAddresses(user.id);
+  }
+
+  // Récupérer les adresses de livraison d'un client (admin)
+  @Get('customer/:userId/shipping-addresses')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getCustomerShippingAddressesForAdmin(@Param('userId', ParseIntPipe) userId: number) {
+    return this.ordersService.getCustomerShippingAddresses(userId);
+  }
+
+  // Enregistrer une adresse de livraison pour le client connecté
+  @Post('shipping-addresses')
+  @UseGuards(JwtAuthGuard)
+  createCustomerShippingAddress(
+    @Body()
+    body: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      postalCode?: string;
+      country?: string;
+      phone?: string | null;
+    },
+    @CurrentUser() user: any,
+  ) {
+    if (user.role !== UserRole.CUSTOMER) {
+      throw new ForbiddenException('Cette route est réservée aux clients');
+    }
+    return this.ordersService.saveCustomerShippingAddress(user.id, body);
+  }
+
   // Routes admin (protégées)
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -93,6 +133,20 @@ export class OrdersController {
   @Roles(UserRole.ADMIN)
   cancel(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.cancel(id);
+  }
+
+  @Post(':id/start-delivery')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  startDelivery(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.startDelivery(id);
+  }
+
+  @Post(':id/complete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  completeOrder(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.completeOrder(id);
   }
 
   @Post(':id/validate-payment')

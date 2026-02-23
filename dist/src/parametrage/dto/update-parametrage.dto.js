@@ -23,6 +23,9 @@ class UpdateParametrageDto {
     valuesContent;
     contactEmail;
     contactPhone;
+    contactPhoneMobile;
+    contactPhoneFax;
+    contactWhatsapp;
     address;
     facebookUrl;
     instagramUrl;
@@ -85,6 +88,21 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateParametrageDto.prototype, "contactPhone", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateParametrageDto.prototype, "contactPhoneMobile", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateParametrageDto.prototype, "contactPhoneFax", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateParametrageDto.prototype, "contactWhatsapp", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

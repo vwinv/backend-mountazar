@@ -13,6 +13,9 @@ export declare class ParametrageController {
         siteTitle: string;
         contactEmail: string | null;
         contactPhone: string | null;
+        contactPhoneMobile: any;
+        contactPhoneFax: any;
+        contactWhatsapp: any;
         facebookUrl: string | null;
         instagramUrl: string | null;
         twitterUrl: string | null;
@@ -44,6 +47,9 @@ export declare class ParametrageController {
         galleryImages: import(".prisma/client").Prisma.JsonValue | null;
         contactEmail: string | null;
         contactPhone: string | null;
+        contactPhoneMobile: string | null;
+        contactPhoneFax: string | null;
+        contactWhatsapp: string | null;
         address: string | null;
         facebookUrl: string | null;
         instagramUrl: string | null;
@@ -69,6 +75,9 @@ export declare class ParametrageController {
         galleryImages: import(".prisma/client").Prisma.JsonValue | null;
         contactEmail: string | null;
         contactPhone: string | null;
+        contactPhoneMobile: string | null;
+        contactPhoneFax: string | null;
+        contactWhatsapp: string | null;
         address: string | null;
         facebookUrl: string | null;
         instagramUrl: string | null;

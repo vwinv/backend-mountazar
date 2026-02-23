@@ -193,9 +193,17 @@ export declare class ProductsController {
         createdAt?: Date | undefined;
         updatedAt?: Date | undefined;
     }>;
+    generateDescription(body: {
+        keywords: string;
+    }): Promise<{
+        description: string;
+    }>;
     findAll(): Promise<{
         images: any;
         subCategory: any;
+        maxRating: number;
+        averageRating: number | null;
+        reviewsCount: any;
         category: {
             id: number;
             name: string;

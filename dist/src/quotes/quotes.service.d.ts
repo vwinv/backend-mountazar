@@ -6,6 +6,7 @@ export declare class QuotesService {
     constructor(prisma: PrismaService);
     create(createQuoteDto: CreateQuoteDto): Promise<any>;
     findAll(status?: string): Promise<any>;
+    findAllForCustomer(userId: number): Promise<any>;
     findOne(id: number): Promise<any>;
     update(id: number, updateQuoteDto: UpdateQuoteDto): Promise<any>;
     approve(id: number, approvedBy: number): Promise<any>;

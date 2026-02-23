@@ -3,9 +3,85 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
+// Catégories dont les produits nécessitent une demande de devis
+const QUOTE_CATEGORY_NAMES = ['rideaux'];
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ---------- Adresses de livraison clients ----------
+
+  /**
+   * Récupère toutes les adresses de livraison d'un client.
+   */
+  async getCustomerShippingAddresses(userId: number) {
+    return (this.prisma as any).shippingAddress.findMany({
+      where: { userId },
+      orderBy: { id: 'desc' },
+    });
+  }
+
+  /**
+   * Enregistre une adresse de livraison pour un client.
+   * Si une adresse strictement identique existe déjà pour ce client,
+   * elle est réutilisée au lieu de créer un doublon.
+   */
+  async saveCustomerShippingAddress(
+    userId: number,
+    payload: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      postalCode?: string;
+      country?: string;
+      phone?: string | null;
+    },
+  ) {
+    const normalized = {
+      firstName: (payload.firstName || '').trim(),
+      lastName: (payload.lastName || '').trim(),
+      address: (payload.address || '').trim(),
+      city: (payload.city || '').trim(),
+      postalCode: (payload.postalCode || '').trim() || null,
+      country: (payload.country || 'Sénégal').trim(),
+      phone: (payload.phone || '').trim() || null,
+    };
+
+    // Chercher une adresse identique pour éviter les doublons
+    const existing = await (this.prisma as any).shippingAddress.findFirst({
+      where: {
+        userId,
+        firstName: normalized.firstName,
+        lastName: normalized.lastName,
+        address: normalized.address,
+        city: normalized.city,
+        postalCode: normalized.postalCode,
+        country: normalized.country,
+        phone: normalized.phone,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // Créer une nouvelle adresse
+    return (this.prisma as any).shippingAddress.create({
+      data: {
+        userId,
+        firstName: normalized.firstName,
+        lastName: normalized.lastName,
+        address: normalized.address,
+        city: normalized.city,
+        postalCode: normalized.postalCode,
+        country: normalized.country,
+        phone: normalized.phone,
+        isDefault: false,
+      },
+    });
+  }
 
   async create(createOrderDto: CreateOrderDto) {
     // Vérifier que l'utilisateur existe
@@ -54,11 +130,12 @@ export class OrdersService {
         throw new NotFoundException(`Produit avec l'ID ${item.productId} introuvable`);
       }
 
-      // Vérifier si le produit nécessite un devis (catégorie "rideaux")
-      const isRideaux = product.category?.name.toLowerCase() === 'rideaux';
+      // Vérifier si le produit nécessite un devis (catégorie nécessitant un devis, ex: "rideaux")
+      const categoryName = product.category?.name?.toLowerCase();
+      const needsQuote = !!categoryName && QUOTE_CATEGORY_NAMES.includes(categoryName);
       
-      if (isRideaux && !createOrderDto.requiresQuote) {
-        throw new BadRequestException('Les produits de la catégorie "rideaux" nécessitent une demande de devis');
+      if (needsQuote && !createOrderDto.requiresQuote) {
+        throw new BadRequestException('Ce produit nécessite une demande de devis');
       }
 
       const price = item.price || Number(product.price);
@@ -75,7 +152,9 @@ export class OrdersService {
     }
 
     // Déterminer le statut initial
-    let status = 'PENDING';
+    // Commande normale : en cours de traitement dès la création
+    // Commande nécessitant un devis : statut spécifique de demande de devis
+    let status = 'PROCESSING';
     if (createOrderDto.requiresQuote) {
       status = 'QUOTE_REQUESTED';
     }
@@ -284,6 +363,11 @@ export class OrdersService {
       throw new BadRequestException('Impossible d\'annuler une commande déjà payée');
     }
 
+    // Ne permettre l'annulation que pour les commandes en cours de traitement
+    if (order.status !== 'PROCESSING') {
+      throw new BadRequestException('Seules les commandes en cours de traitement peuvent être annulées');
+    }
+
     return this.prisma.order.update({
       where: { id },
       data: { status: 'CANCELLED' as any },
@@ -321,6 +405,7 @@ export class OrdersService {
             payment: true,
           },
         },
+        quote: true,
       },
     });
 
@@ -328,29 +413,79 @@ export class OrdersService {
       throw new NotFoundException(`Commande avec l'ID ${id} introuvable`);
     }
 
-    if (!order.invoice) {
-      throw new BadRequestException('Aucune facture associée à cette commande');
+    // Si aucune facture n'est encore associée à la commande,
+    // on la crée ici (nouvelle règle métier).
+    let invoice = order.invoice as any | null;
+    if (!invoice) {
+      // Si la commande vient d'un devis, la facture doit refléter
+      // exactement les montants du devis (détails, frais, remise).
+      let subtotal: number;
+      let shipping = 0;
+      let discount = 0;
+      let total: number;
+      let quoteId: number | null = null;
+
+      if (order.quote) {
+        const q: any = order.quote;
+        const details: any = q.quoteDetails || {};
+        const items = Array.isArray(details.items) ? details.items : [];
+        const itemsTotal = items.reduce(
+          (sum: number, item: any) => sum + (Number(item.total) || 0),
+          0,
+        );
+        const transportFee = Number(details.transportFee) || 0;
+        discount = Number(details.discount) || 0;
+
+        subtotal = itemsTotal;
+        // On privilégie le total stocké sur le devis,
+        // sinon on le recalcule à partir des détails.
+        total =
+          (q.total !== undefined ? Number(q.total) : NaN) ||
+          itemsTotal + transportFee - discount;
+        shipping = transportFee;
+        quoteId = q.id;
+      } else {
+        // Commande classique : on garde le comportement existant.
+        total = Number(order.total);
+        subtotal = total;
+      }
+
+      const invoiceNumber = `INV-${Date.now()}-${order.id}`;
+
+      invoice = await (this.prisma as any).invoice.create({
+        data: {
+          invoiceNumber,
+          orderId: order.id,
+          quoteId: quoteId ?? undefined,
+          subtotal,
+          tax: 0,
+          shipping,
+          discount,
+          total,
+        },
+      });
     }
 
-    if (order.invoice.payment?.status === 'COMPLETED') {
+    // Si le paiement est déjà validé, on bloque
+    if (invoice.payment?.status === 'COMPLETED') {
       throw new BadRequestException('Le paiement a déjà été validé');
     }
 
     // Mettre à jour le statut du paiement
-    if (order.invoice.payment) {
+    if (invoice.payment) {
       await (this.prisma as any).payment.update({
-        where: { id: order.invoice.payment.id },
+        where: { id: invoice.payment.id },
         data: {
           status: 'COMPLETED',
           paidAt: new Date(),
         },
       });
     } else {
-      // Créer le paiement si il n'existe pas
+      // Créer le paiement s'il n'existe pas encore
       await (this.prisma as any).payment.create({
         data: {
-          invoiceId: order.invoice.id,
-          amount: order.invoice.total,
+          invoiceId: invoice.id,
+          amount: invoice.total,
           method: 'OTHER',
           status: 'COMPLETED',
           paidAt: new Date(),
@@ -358,10 +493,116 @@ export class OrdersService {
       });
     }
 
-    // Mettre à jour le statut de la commande
+    // Si la commande est liée à un devis, passer le devis au statut PAID
+    if (order.quote) {
+      await (this.prisma as any).quote.update({
+        where: { id: order.quote.id },
+        data: {
+          status: 'PAID',
+        },
+      });
+    }
+
+    // Mettre à jour le statut de la commande : commande terminée (payée)
     return this.prisma.order.update({
       where: { id },
-      data: { status: 'PROCESSING' as any },
+      data: { status: 'COMPLETED' as any },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        shippingAddress: true,
+        quote: true,
+        invoice: {
+          include: {
+            payment: true,
+          },
+        },
+      } as any,
+    });
+  }
+
+  /**
+   * Démarrer la livraison : passe la commande de PROCESSING à SHIPPED.
+   * À faire avant "Terminer la livraison". Réservé aux commandes normales sans facture.
+   */
+  async startDelivery(id: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { invoice: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Commande avec l'ID ${id} introuvable`);
+    }
+
+    if (order.invoice) {
+      throw new BadRequestException('Cette commande a déjà une facture');
+    }
+
+    if (order.status !== 'PROCESSING') {
+      throw new BadRequestException('Seules les commandes en cours de traitement peuvent démarrer la livraison');
+    }
+
+    return this.prisma.order.update({
+      where: { id },
+      data: { status: 'SHIPPED' as any },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        items: {
+          include: { product: true },
+        },
+        shippingAddress: true,
+        quote: true,
+        invoice: { include: { payment: true } },
+      } as any,
+    });
+  }
+
+  /**
+   * Terminer la livraison (livraison déjà démarrée) :
+   * passe simplement le statut en DELIVERED (livrée).
+   * La facture est désormais créée au moment de la validation du paiement.
+   * Réservé aux commandes SHIPPED sans facture (pas les demandes de devis).
+   */
+  async completeOrder(id: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { invoice: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Commande avec l'ID ${id} introuvable`);
+    }
+
+    if (order.invoice) {
+      throw new BadRequestException('Cette commande a déjà une facture');
+    }
+
+    if (order.status !== 'SHIPPED') {
+      throw new BadRequestException('Démarrez d\'abord la livraison avant de terminer la commande');
+    }
+
+    return this.prisma.order.update({
+      where: { id },
+      data: { status: 'DELIVERED' as any },
       include: {
         user: {
           select: {

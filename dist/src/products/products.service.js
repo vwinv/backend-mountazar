@@ -8,14 +8,50 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const openai_1 = __importDefault(require("openai"));
 let ProductsService = class ProductsService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
+    }
+    async generateDescription(keywords) {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+            throw new common_1.BadRequestException('Génération IA non configurée. Définissez OPENAI_API_KEY dans les variables d\'environnement.');
+        }
+        const trimmed = keywords?.trim();
+        if (!trimmed) {
+            throw new common_1.BadRequestException('Veuillez fournir au moins un mot-clé.');
+        }
+        const openai = new openai_1.default({ apiKey });
+        const completion = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Tu es un rédacteur e-commerce. Tu génères des descriptions de produits en français, professionnelles et vendeuses. Réponds uniquement avec le texte de la description, sans titre ni préambule. Maximum 10 lignes.',
+                },
+                {
+                    role: 'user',
+                    content: `Génère une description produit (max 10 lignes) à partir de ces mots-clés : ${trimmed}`,
+                },
+            ],
+            max_tokens: 400,
+        });
+        const text = completion.choices[0]?.message?.content?.trim();
+        if (!text) {
+            throw new common_1.BadRequestException('La génération n\'a pas renvoyé de texte.');
+        }
+        const lines = text.split(/\r?\n/).filter((l) => l.trim());
+        const description = lines.slice(0, 10).join('\n').trim();
+        return { description };
     }
     async create(createProductDto) {
         const { images, categoryId, subCategoryId, ...restData } = createProductDto;
@@ -98,7 +134,24 @@ let ProductsService = class ProductsService {
                     },
                 })
                 : null;
-            return { ...product, images, subCategory };
+            const reviews = await this.prisma.review.findMany({
+                where: {
+                    productId: product.id,
+                    isApproved: true,
+                },
+                select: {
+                    rating: true,
+                },
+            });
+            let maxRating = 0;
+            let averageRating = null;
+            let reviewsCount = reviews.length;
+            if (reviews.length > 0) {
+                const ratings = reviews.map((r) => r.rating);
+                maxRating = Math.max(...ratings);
+                averageRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+            }
+            return { ...product, images, subCategory, maxRating, averageRating, reviewsCount };
         }));
         return productsWithImages;
     }

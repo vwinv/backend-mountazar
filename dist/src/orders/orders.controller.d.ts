@@ -86,6 +86,17 @@ export declare class OrdersController {
         createdAt: Date;
         updatedAt: Date;
     })[]>;
+    getCustomerShippingAddresses(user: any): Promise<any>;
+    getCustomerShippingAddressesForAdmin(userId: number): Promise<any>;
+    createCustomerShippingAddress(body: {
+        firstName: string;
+        lastName: string;
+        address: string;
+        city: string;
+        postalCode?: string;
+        country?: string;
+        phone?: string | null;
+    }, user: any): Promise<any>;
     create(createOrderDto: CreateOrderDto): Promise<{
         [x: string]: ({
             id: number;
@@ -193,6 +204,88 @@ export declare class OrdersController {
         };
     }>;
     cancel(id: number): Promise<{
+        [x: string]: ({
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        } | {
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        })[] | {
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        }[];
+        [x: number]: never;
+        [x: symbol]: never;
+    } & {
+        id: number;
+        userId: number;
+        total: import("@prisma/client/runtime/library").Decimal;
+        status: import(".prisma/client").$Enums.OrderStatus;
+        requiresQuote: boolean;
+        shippingAddressId: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    startDelivery(id: number): Promise<{
+        [x: string]: ({
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        } | {
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        })[] | {
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        }[];
+        [x: number]: never;
+        [x: symbol]: never;
+    } & {
+        id: number;
+        userId: number;
+        total: import("@prisma/client/runtime/library").Decimal;
+        status: import(".prisma/client").$Enums.OrderStatus;
+        requiresQuote: boolean;
+        shippingAddressId: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    completeOrder(id: number): Promise<{
         [x: string]: ({
             id: number;
             orderId: number;

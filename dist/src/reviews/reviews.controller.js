@@ -19,6 +19,8 @@ const create_review_dto_1 = require("./dto/create-review.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const client_1 = require("@prisma/client");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const roles_guard_1 = require("../auth/guards/roles.guard");
 let ReviewsController = class ReviewsController {
     reviewsService;
     constructor(reviewsService) {
@@ -50,6 +52,12 @@ let ReviewsController = class ReviewsController {
             throw new common_1.ForbiddenException('Seuls les clients peuvent consulter leurs avis');
         }
         return this.reviewsService.findUserReview(user.id, productId);
+    }
+    findAll() {
+        return this.reviewsService.findAll();
+    }
+    delete(id) {
+        return this.reviewsService.deleteReview(id);
     }
 };
 exports.ReviewsController = ReviewsController;
@@ -96,6 +104,23 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], ReviewsController.prototype, "findUserReview", null);
+__decorate([
+    (0, common_1.Get)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ReviewsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], ReviewsController.prototype, "delete", null);
 exports.ReviewsController = ReviewsController = __decorate([
     (0, common_1.Controller)('api/reviews'),
     __metadata("design:paramtypes", [reviews_service_1.ReviewsService])

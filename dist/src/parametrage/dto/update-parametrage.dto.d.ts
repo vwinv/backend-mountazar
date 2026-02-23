@@ -10,6 +10,9 @@ export declare class UpdateParametrageDto {
     valuesContent?: string;
     contactEmail?: string;
     contactPhone?: string;
+    contactPhoneMobile?: string;
+    contactPhoneFax?: string;
+    contactWhatsapp?: string;
     address?: string;
     facebookUrl?: string;
     instagramUrl?: string;

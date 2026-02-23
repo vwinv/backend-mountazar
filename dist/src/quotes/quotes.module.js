@@ -12,13 +12,14 @@ const quotes_controller_1 = require("./quotes.controller");
 const quotes_service_1 = require("./quotes.service");
 const prisma_service_1 = require("../prisma/prisma.service");
 const auth_module_1 = require("../auth/auth.module");
+const customer_quotes_controller_1 = require("./customer-quotes.controller");
 let QuotesModule = class QuotesModule {
 };
 exports.QuotesModule = QuotesModule;
 exports.QuotesModule = QuotesModule = __decorate([
     (0, common_1.Module)({
         imports: [auth_module_1.AuthModule],
-        controllers: [quotes_controller_1.QuotesController],
+        controllers: [quotes_controller_1.QuotesController, customer_quotes_controller_1.CustomerQuotesController],
         providers: [quotes_service_1.QuotesService, prisma_service_1.PrismaService],
         exports: [quotes_service_1.QuotesService],
     })

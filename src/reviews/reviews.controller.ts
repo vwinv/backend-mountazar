@@ -1,10 +1,23 @@
-import { Controller, Post, Body, UseGuards, ParseIntPipe, Param, Get, Patch, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  ParseIntPipe,
+  Param,
+  Get,
+  Patch,
+  ForbiddenException,
+  Delete,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewCommentDto } from './dto/update-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '@prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('api/reviews')
 export class ReviewsController {
@@ -69,6 +82,21 @@ export class ReviewsController {
     }
 
     return this.reviewsService.findUserReview(user.id, productId);
+  }
+
+  // Routes admin : liste complète des avis et suppression
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findAll() {
+    return this.reviewsService.findAll();
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.reviewsService.deleteReview(id);
   }
 }
 

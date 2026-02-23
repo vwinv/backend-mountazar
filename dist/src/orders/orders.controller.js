@@ -40,6 +40,21 @@ let OrdersController = class OrdersController {
         }
         return this.ordersService.findByUserId(user.id);
     }
+    getCustomerShippingAddresses(user) {
+        if (user.role !== client_1.UserRole.CUSTOMER) {
+            throw new common_1.ForbiddenException('Cette route est réservée aux clients');
+        }
+        return this.ordersService.getCustomerShippingAddresses(user.id);
+    }
+    getCustomerShippingAddressesForAdmin(userId) {
+        return this.ordersService.getCustomerShippingAddresses(userId);
+    }
+    createCustomerShippingAddress(body, user) {
+        if (user.role !== client_1.UserRole.CUSTOMER) {
+            throw new common_1.ForbiddenException('Cette route est réservée aux clients');
+        }
+        return this.ordersService.saveCustomerShippingAddress(user.id, body);
+    }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
@@ -59,6 +74,12 @@ let OrdersController = class OrdersController {
     }
     cancel(id) {
         return this.ordersService.cancel(id);
+    }
+    startDelivery(id) {
+        return this.ordersService.startDelivery(id);
+    }
+    completeOrder(id) {
+        return this.ordersService.completeOrder(id);
     }
     validatePayment(id) {
         return this.ordersService.validatePayment(id);
@@ -91,6 +112,32 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "getCustomerOrders", null);
+__decorate([
+    (0, common_1.Get)('shipping-addresses'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "getCustomerShippingAddresses", null);
+__decorate([
+    (0, common_1.Get)('customer/:userId/shipping-addresses'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('userId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "getCustomerShippingAddressesForAdmin", null);
+__decorate([
+    (0, common_1.Post)('shipping-addresses'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "createCustomerShippingAddress", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
@@ -144,6 +191,24 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "cancel", null);
+__decorate([
+    (0, common_1.Post)(':id/start-delivery'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "startDelivery", null);
+__decorate([
+    (0, common_1.Post)(':id/complete'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "completeOrder", null);
 __decorate([
     (0, common_1.Post)(':id/validate-payment'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
