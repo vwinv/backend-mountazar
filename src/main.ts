@@ -13,8 +13,8 @@ async function bootstrap() {
   // Configuration CORS pour permettre les requêtes depuis le frontend
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://www.mountazar.com',
-    'https://mountazar.com',
+    'https://www.mountazardeco.com',
+    'https://mountazardeco.com',
     ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
   ];
 
