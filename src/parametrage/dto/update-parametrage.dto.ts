@@ -75,6 +75,21 @@ export class UpdateParametrageDto {
   @IsString()
   twitterUrl?: string;
 
+  // URL TikTok
+  @IsOptional()
+  @IsString()
+  tiktokUrl?: string;
+
+  // Champs tableau gérés principalement côté controller / service
+  @IsOptional()
+  heroBackgrounds?: string[];
+
+  @IsOptional()
+  galleryImages?: string[];
+
+  @IsOptional()
+  values?: { title: string; content: string }[];
+
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;

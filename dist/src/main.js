@@ -44,8 +44,8 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const allowedOrigins = [
         'http://localhost:3000',
-        'https://www.mountazar.com',
-        'https://mountazar.com',
+        'https://www.mountazardeco.com',
+        'https://mountazardeco.com',
         ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
     ];
     app.enableCors({

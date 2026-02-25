@@ -30,6 +30,10 @@ class UpdateParametrageDto {
     facebookUrl;
     instagramUrl;
     twitterUrl;
+    tiktokUrl;
+    heroBackgrounds;
+    galleryImages;
+    values;
     isActive;
 }
 exports.UpdateParametrageDto = UpdateParametrageDto;
@@ -123,6 +127,23 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateParametrageDto.prototype, "twitterUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateParametrageDto.prototype, "tiktokUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateParametrageDto.prototype, "heroBackgrounds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateParametrageDto.prototype, "galleryImages", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateParametrageDto.prototype, "values", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),

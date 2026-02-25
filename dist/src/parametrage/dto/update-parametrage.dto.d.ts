@@ -17,5 +17,12 @@ export declare class UpdateParametrageDto {
     facebookUrl?: string;
     instagramUrl?: string;
     twitterUrl?: string;
+    tiktokUrl?: string;
+    heroBackgrounds?: string[];
+    galleryImages?: string[];
+    values?: {
+        title: string;
+        content: string;
+    }[];
     isActive?: boolean;
 }
