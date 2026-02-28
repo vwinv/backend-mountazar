@@ -20,22 +20,24 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Autoriser les requêtes sans origine (ex: Postman, mobile apps)
+      // Autoriser les requêtes sans origine (ex: Postman, health checks Render, mobile apps)
       if (!origin) {
         return callback(null, true);
       }
 
       // Vérifier si l'origine est dans la liste autorisée
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // En développement, autoriser toutes les origines localhost
-        if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
+        return callback(null, true);
       }
+      // En développement, autoriser toutes les origines localhost
+      if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+        return callback(null, true);
+      }
+      // Sur Render : autoriser les origines *.onrender.com (frontend, preview deploys)
+      if (origin.endsWith('.onrender.com')) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
