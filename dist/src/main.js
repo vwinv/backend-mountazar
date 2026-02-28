@@ -39,7 +39,6 @@ const app_module_1 = require("./app.module");
 require("dotenv/config");
 const path_1 = require("path");
 const express = __importStar(require("express"));
-const http_exception_filter_1 = require("./common/filters/http-exception.filter");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const allowedOrigins = [
@@ -103,7 +102,6 @@ async function bootstrap() {
             });
         },
     }));
-    app.useGlobalFilters(new http_exception_filter_1.AllExceptionsFilter());
     await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

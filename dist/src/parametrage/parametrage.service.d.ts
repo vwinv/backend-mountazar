@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateParametrageDto } from './dto/update-parametrage.dto';
+import { Prisma } from '@prisma/client';
 export declare class ParametrageService {
     private readonly prisma;
     constructor(prisma: PrismaService);
@@ -10,13 +11,13 @@ export declare class ParametrageService {
         logoUrl: string | null;
         heroTitle: string | null;
         heroSubtitle: string | null;
-        heroBackgrounds: import(".prisma/client").Prisma.JsonValue | null;
+        heroBackgrounds: Prisma.JsonValue | null;
         aboutTitle: string | null;
         aboutContent: string | null;
         valuesTitle: string | null;
         valuesContent: string | null;
-        values: import(".prisma/client").Prisma.JsonValue | null;
-        galleryImages: import(".prisma/client").Prisma.JsonValue | null;
+        values: Prisma.JsonValue | null;
+        galleryImages: Prisma.JsonValue | null;
         contactEmail: string | null;
         contactPhone: string | null;
         contactPhoneMobile: string | null;
@@ -45,13 +46,13 @@ export declare class ParametrageService {
         logoUrl: string | null;
         heroTitle: string | null;
         heroSubtitle: string | null;
-        heroBackgrounds: import(".prisma/client").Prisma.JsonValue | null;
+        heroBackgrounds: Prisma.JsonValue | null;
         aboutTitle: string | null;
         aboutContent: string | null;
         valuesTitle: string | null;
         valuesContent: string | null;
-        values: import(".prisma/client").Prisma.JsonValue | null;
-        galleryImages: import(".prisma/client").Prisma.JsonValue | null;
+        values: Prisma.JsonValue | null;
+        galleryImages: Prisma.JsonValue | null;
         contactEmail: string | null;
         contactPhone: string | null;
         contactPhoneMobile: string | null;

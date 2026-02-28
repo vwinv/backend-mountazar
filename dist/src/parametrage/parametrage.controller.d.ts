@@ -1,4 +1,5 @@
 import { ParametrageService } from './parametrage.service';
+import { UpdateParametrageDto } from './dto/update-parametrage.dto';
 export declare class ParametrageController {
     private readonly parametrageService;
     constructor(parametrageService: ParametrageService);
@@ -59,7 +60,14 @@ export declare class ParametrageController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    update(body: any): Promise<{
+    update(body: UpdateParametrageDto & {
+        heroBackgrounds?: string[];
+        galleryImages?: string[];
+        values?: {
+            title: string;
+            content: string;
+        }[];
+    }): Promise<{
         id: number;
         siteTitle: string;
         siteSubtitle: string | null;

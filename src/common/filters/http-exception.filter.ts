@@ -87,13 +87,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // En production, ne pas exposer les détails des erreurs internes
     const isDevelopment = process.env.NODE_ENV !== 'production';
-    
+    const isPrismaError = exception instanceof Error && (
+      exception.constructor.name.includes('Prisma') ||
+      exception.message.includes('Prisma') ||
+      exception.message.includes('ConnectorError') ||
+      exception.message.includes('QueryError')
+    );
+
     response.status(status).json({
       statusCode: status,
       message: message,
       error: error,
       ...(isDevelopment && exception instanceof Error && {
         stack: exception.stack,
+        details: exception.message,
+      }),
+      ...(isPrismaError && exception instanceof Error && {
         details: exception.message,
       }),
       timestamp: new Date().toISOString(),

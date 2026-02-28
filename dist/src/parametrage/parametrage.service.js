@@ -33,15 +33,48 @@ let ParametrageService = class ParametrageService {
     }
     async update(data) {
         const current = await this.getCurrent();
-        return this.prisma.parametrage.update({
-            where: { id: current.id },
-            data: {
-                ...data,
-                heroBackgrounds: data.heroBackgrounds ?? current.heroBackgrounds,
-                galleryImages: data.galleryImages ?? current.galleryImages,
-                values: data.values ?? current.values,
-            },
-        });
+        const id = current.id;
+        const contactFields = [];
+        const d = data;
+        const contactKeys = [
+            'contactEmail', 'contactPhone', 'contactPhoneMobile', 'contactPhoneFax', 'contactWhatsapp',
+            'address', 'facebookUrl', 'instagramUrl', 'twitterUrl', 'tiktokUrl',
+        ];
+        for (const key of contactKeys) {
+            const v = d[key];
+            if (v !== undefined && v !== null) {
+                contactFields.push({ col: `"${key}"`, val: String(v) });
+            }
+        }
+        if (contactFields.length > 0) {
+            const sets = contactFields.map((f, i) => `${f.col} = $${i + 1}`).join(', ');
+            const params = [...contactFields.map(f => f.val), id];
+            await this.prisma.$executeRawUnsafe(`UPDATE "Parametrage" SET ${sets}, "updatedAt" = NOW() WHERE id = $${params.length}`, ...params);
+        }
+        const updateData = {};
+        if (data.heroBackgrounds !== undefined)
+            updateData.heroBackgrounds = data.heroBackgrounds;
+        if (data.galleryImages !== undefined)
+            updateData.galleryImages = data.galleryImages;
+        if (data.values !== undefined)
+            updateData.values = data.values;
+        const otherKeys = [
+            'siteTitle', 'siteSubtitle', 'logoUrl', 'heroTitle', 'heroSubtitle',
+            'aboutTitle', 'aboutContent', 'valuesTitle', 'valuesContent',
+            'isActive',
+        ];
+        for (const key of otherKeys) {
+            const v = data[key];
+            if (v !== undefined && v !== null)
+                updateData[key] = v;
+        }
+        if (Object.keys(updateData).length > 0) {
+            return this.prisma.parametrage.update({
+                where: { id },
+                data: updateData,
+            });
+        }
+        return this.getCurrent();
     }
 };
 exports.ParametrageService = ParametrageService;

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -78,24 +78,28 @@ export class ParametrageController {
 
   /**
    * Mise à jour du paramétrage (admin uniquement).
+   * forbidNonWhitelisted: false pour éviter 400 si le client envoie des champs inattendus.
    */
   @Put()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async update(@Body() body: any) {
-    // On accepte heroBackgrounds, galleryImages et values comme tableaux
-    const dto: UpdateParametrageDto & {
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      transform: true,
+      transformOptions: { enableImplicitConversion: false },
+    }),
+  )
+  async update(
+    @Body()
+    body: UpdateParametrageDto & {
       heroBackgrounds?: string[];
       galleryImages?: string[];
       values?: { title: string; content: string }[];
-    } = {
-      ...body,
-      heroBackgrounds: body.heroBackgrounds,
-      galleryImages: body.galleryImages,
-      values: body.values,
-    };
-
-    return this.parametrageService.update(dto);
+    },
+  ) {
+    return this.parametrageService.update(body);
   }
 }
 

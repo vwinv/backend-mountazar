@@ -7,10 +7,10 @@ export declare class PromotionsController {
     constructor(promotionsService: PromotionsService);
     findActivePublic(): Promise<{
         id: number;
+        value: import("@prisma/client/runtime/library").Decimal;
         name: string;
         description: string | null;
         type: import(".prisma/client").$Enums.PromotionType;
-        value: import("@prisma/client/runtime/library").Decimal;
         banniere: string | null;
         startDate: Date;
         endDate: Date;

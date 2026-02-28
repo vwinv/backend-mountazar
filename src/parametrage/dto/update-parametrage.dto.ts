@@ -1,4 +1,5 @@
 import { IsBoolean, IsEmail, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateParametrageDto {
   @IsOptional()
@@ -44,18 +45,22 @@ export class UpdateParametrageDto {
   contactEmail?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value == null ? undefined : String(value)))
   @IsString()
   contactPhone?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value == null ? undefined : String(value)))
   @IsString()
   contactPhoneMobile?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value == null ? undefined : String(value)))
   @IsString()
   contactPhoneFax?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value == null ? undefined : String(value)))
   @IsString()
   contactWhatsapp?: string;
 

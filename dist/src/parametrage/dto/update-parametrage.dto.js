@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateParametrageDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class UpdateParametrageDto {
     siteTitle;
     siteSubtitle;
@@ -89,21 +90,25 @@ __decorate([
 ], UpdateParametrageDto.prototype, "contactEmail", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value == null ? undefined : String(value))),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateParametrageDto.prototype, "contactPhone", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value == null ? undefined : String(value))),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateParametrageDto.prototype, "contactPhoneMobile", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value == null ? undefined : String(value))),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateParametrageDto.prototype, "contactPhoneFax", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value == null ? undefined : String(value))),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateParametrageDto.prototype, "contactWhatsapp", void 0);
