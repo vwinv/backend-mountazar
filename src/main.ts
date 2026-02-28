@@ -11,12 +11,18 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Configuration CORS pour permettre les requêtes depuis le frontend
+  const corsOriginsEnv = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
   const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:3001',
     'https://www.mountazardeco.com',
     'https://mountazardeco.com',
     ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ...corsOriginsEnv,
   ];
+  const allowedSuffixes = ['.onrender.com', '.vercel.app', '.netlify.app', '.cloudflarepages.dev'];
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -25,16 +31,13 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Vérifier si l'origine est dans la liste autorisée
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      // En développement, autoriser toutes les origines localhost
       if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
         return callback(null, true);
       }
-      // Sur Render : autoriser les origines *.onrender.com (frontend, preview deploys)
-      if (origin.endsWith('.onrender.com')) {
+      if (allowedSuffixes.some((s) => origin.endsWith(s))) {
         return callback(null, true);
       }
       callback(new Error('Not allowed by CORS'));
