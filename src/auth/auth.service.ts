@@ -117,32 +117,47 @@ export class AuthService {
     // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Créer l'utilisateur avec le rôle CUSTOMER
-    const user = await (this.prisma.user as any).create({
-      data: {
-        email: registerDto.email ?? null,
-        phone: registerDto.phone,
-        password: hashedPassword,
-        firstName: registerDto.firstName,
-        lastName: registerDto.lastName,
-        role: 'CUSTOMER',
-      },
-    });
+    // Créer l'utilisateur avec le rôle CUSTOMER (address optionnel, dépend de la migration)
+    const data: any = {
+      email: registerDto.email ?? null,
+      phone: registerDto.phone,
+      password: hashedPassword,
+      firstName: registerDto.firstName,
+      lastName: registerDto.lastName,
+      role: 'CUSTOMER',
+    };
+    const addressValue = registerDto.address?.trim() || null;
+    try {
+      const user = await (this.prisma.user as any).create({
+        data: { ...data, ...(addressValue != null && { address: addressValue }) },
+      });
+      return this.buildRegisterResponse(user);
+    } catch (err: any) {
+      // Si la colonne address n'existe pas encore (migration non appliquée), réessayer sans address
+      const msg = err?.message ?? '';
+      if (msg.includes('address') || msg.includes('Unknown column') || err?.code === 'P2010') {
+        const user = await (this.prisma.user as any).create({ data });
+        return this.buildRegisterResponse(user);
+      }
+      throw err;
+    }
+  }
 
-    // Générer le token JWT
+  private buildRegisterResponse(user: any) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
     };
-
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         email: user.email,
+        phone: user.phone,
         firstName: user.firstName,
         lastName: user.lastName,
+        address: user.address ?? undefined,
         role: user.role,
       },
     };

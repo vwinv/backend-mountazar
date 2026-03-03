@@ -24,6 +24,8 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        phone: true,
+        address: true,
         firstName: true,
         lastName: true,
         createdAt: true,

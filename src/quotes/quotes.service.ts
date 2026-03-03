@@ -62,6 +62,7 @@ export class QuotesService {
                 firstName: true,
                 lastName: true,
                 phone: true,
+                address: true,
               },
             },
             items: {
@@ -101,6 +102,7 @@ export class QuotesService {
                 firstName: true,
                 lastName: true,
                 phone: true,
+                address: true,
               },
             },
             items: {
@@ -173,6 +175,7 @@ export class QuotesService {
                 firstName: true,
                 lastName: true,
                 phone: true,
+                address: true,
               },
             },
             items: {
@@ -239,6 +242,11 @@ export class QuotesService {
       }
     }
 
+    // Mettre à jour les détails du devis (lignes, frais de déplacement, remise)
+    if (updateQuoteDto.quoteDetails !== undefined) {
+      updateData.quoteDetails = updateQuoteDto.quoteDetails || null;
+    }
+
     return (this.prisma as any).quote.update({
       where: { id },
       data: updateData,
@@ -252,6 +260,7 @@ export class QuotesService {
                 firstName: true,
                 lastName: true,
                 phone: true,
+                address: true,
               },
             },
             items: {

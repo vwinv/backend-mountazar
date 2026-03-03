@@ -39,30 +39,36 @@ const app_module_1 = require("./app.module");
 require("dotenv/config");
 const path_1 = require("path");
 const express = __importStar(require("express"));
+const http_exception_filter_1 = require("./common/filters/http-exception.filter");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const corsOriginsEnv = process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+        : [];
     const allowedOrigins = [
         'http://localhost:3000',
+        'http://localhost:3001',
         'https://www.mountazardeco.com',
         'https://mountazardeco.com',
         ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+        ...corsOriginsEnv,
     ];
+    const allowedSuffixes = ['.onrender.com', '.vercel.app', '.netlify.app', '.cloudflarepages.dev'];
     app.enableCors({
         origin: (origin, callback) => {
             if (!origin) {
                 return callback(null, true);
             }
             if (allowedOrigins.includes(origin)) {
-                callback(null, true);
+                return callback(null, true);
             }
-            else {
-                if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
-                    callback(null, true);
-                }
-                else {
-                    callback(new Error('Not allowed by CORS'));
-                }
+            if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+                return callback(null, true);
             }
+            if (allowedSuffixes.some((s) => origin.endsWith(s))) {
+                return callback(null, true);
+            }
+            callback(new Error('Not allowed by CORS'));
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -102,6 +108,7 @@ async function bootstrap() {
             });
         },
     }));
+    app.useGlobalFilters(new http_exception_filter_1.AllExceptionsFilter());
     await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

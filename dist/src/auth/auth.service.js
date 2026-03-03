@@ -132,16 +132,31 @@ let AuthService = class AuthService {
             throw new common_1.BadRequestException('Ce numéro de téléphone est déjà utilisé');
         }
         const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-        const user = await this.prisma.user.create({
-            data: {
-                email: registerDto.email ?? null,
-                phone: registerDto.phone,
-                password: hashedPassword,
-                firstName: registerDto.firstName,
-                lastName: registerDto.lastName,
-                role: 'CUSTOMER',
-            },
-        });
+        const data = {
+            email: registerDto.email ?? null,
+            phone: registerDto.phone,
+            password: hashedPassword,
+            firstName: registerDto.firstName,
+            lastName: registerDto.lastName,
+            role: 'CUSTOMER',
+        };
+        const addressValue = registerDto.address?.trim() || null;
+        try {
+            const user = await this.prisma.user.create({
+                data: { ...data, ...(addressValue != null && { address: addressValue }) },
+            });
+            return this.buildRegisterResponse(user);
+        }
+        catch (err) {
+            const msg = err?.message ?? '';
+            if (msg.includes('address') || msg.includes('Unknown column') || err?.code === 'P2010') {
+                const user = await this.prisma.user.create({ data });
+                return this.buildRegisterResponse(user);
+            }
+            throw err;
+        }
+    }
+    buildRegisterResponse(user) {
         const payload = {
             sub: user.id,
             email: user.email,
@@ -152,8 +167,10 @@ let AuthService = class AuthService {
             user: {
                 id: user.id,
                 email: user.email,
+                phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
+                address: user.address ?? undefined,
                 role: user.role,
             },
         };

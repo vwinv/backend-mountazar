@@ -5,6 +5,8 @@ export declare class UsersController {
     findAll(search?: string): Promise<{
         id: number;
         email: string | null;
+        phone: string | null;
+        address: string | null;
         firstName: string;
         lastName: string;
         createdAt: Date;

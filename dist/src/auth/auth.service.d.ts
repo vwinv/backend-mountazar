@@ -33,9 +33,12 @@ export declare class AuthService {
         user: {
             id: any;
             email: any;
+            phone: any;
             firstName: any;
             lastName: any;
+            address: any;
             role: any;
         };
     }>;
+    private buildRegisterResponse;
 }

@@ -17,6 +17,7 @@ class RegisterDto {
     password;
     firstName;
     lastName;
+    address;
 }
 exports.RegisterDto = RegisterDto;
 __decorate([
@@ -45,4 +46,9 @@ __decorate([
     (0, class_validator_1.MinLength)(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "lastName", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "address", void 0);
 //# sourceMappingURL=register.dto.js.map

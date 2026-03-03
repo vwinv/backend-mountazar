@@ -64,6 +64,7 @@ let QuotesService = class QuotesService {
                                 firstName: true,
                                 lastName: true,
                                 phone: true,
+                                address: true,
                             },
                         },
                         items: {
@@ -98,6 +99,7 @@ let QuotesService = class QuotesService {
                                 firstName: true,
                                 lastName: true,
                                 phone: true,
+                                address: true,
                             },
                         },
                         items: {
@@ -165,6 +167,7 @@ let QuotesService = class QuotesService {
                                 firstName: true,
                                 lastName: true,
                                 phone: true,
+                                address: true,
                             },
                         },
                         items: {
@@ -221,6 +224,9 @@ let QuotesService = class QuotesService {
                 });
             }
         }
+        if (updateQuoteDto.quoteDetails !== undefined) {
+            updateData.quoteDetails = updateQuoteDto.quoteDetails || null;
+        }
         return this.prisma.quote.update({
             where: { id },
             data: updateData,
@@ -234,6 +240,7 @@ let QuotesService = class QuotesService {
                                 firstName: true,
                                 lastName: true,
                                 phone: true,
+                                address: true,
                             },
                         },
                         items: {
