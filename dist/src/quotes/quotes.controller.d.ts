@@ -5,7 +5,7 @@ export declare class QuotesController {
     private readonly quotesService;
     constructor(quotesService: QuotesService);
     create(createQuoteDto: CreateQuoteDto, user: any): Promise<any>;
-    findAll(status?: string): Promise<any>;
+    findAll(status?: string, search?: string): Promise<any>;
     findOne(id: number): Promise<any>;
     update(id: number, updateQuoteDto: UpdateQuoteDto): Promise<any>;
     approve(id: number, user: any): Promise<any>;

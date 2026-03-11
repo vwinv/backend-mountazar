@@ -99,9 +99,18 @@ export class OrdersController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  findAll(@Query('status') status?: string, @Query('requiresQuote') requiresQuote?: string) {
-    const requiresQuoteBool = requiresQuote === 'true' ? true : requiresQuote === 'false' ? false : undefined;
-    return this.ordersService.findAll(status, requiresQuoteBool);
+  findAll(
+    @Query('status') status?: string,
+    @Query('requiresQuote') requiresQuote?: string,
+    @Query('search') search?: string,
+  ) {
+    const requiresQuoteBool =
+      requiresQuote === 'true'
+        ? true
+        : requiresQuote === 'false'
+          ? false
+          : undefined;
+    return this.ordersService.findAll(status, requiresQuoteBool, search);
   }
 
   // Routes de statistiques (DOIVENT être avant @Get(':id') pour éviter les conflits)

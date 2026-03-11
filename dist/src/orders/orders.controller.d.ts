@@ -138,7 +138,7 @@ export declare class OrdersController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    findAll(status?: string, requiresQuote?: string): Promise<({
+    findAll(status?: string, requiresQuote?: string, search?: string): Promise<({
         [x: string]: ({
             id: number;
             orderId: number;

@@ -84,10 +84,35 @@ export class QuotesService {
     return quote;
   }
 
-  async findAll(status?: string) {
+  async findAll(status?: string, search?: string) {
     const where: any = {};
     if (status) {
       where.status = status;
+    }
+
+    if (search && search.trim().length > 0) {
+      const term = search.trim();
+      const or: any[] = [];
+
+      const idAsNumber = Number(term);
+      if (!Number.isNaN(idAsNumber) && Number.isInteger(idAsNumber)) {
+        or.push({ id: idAsNumber });
+      }
+
+      or.push({
+        order: {
+          user: {
+            OR: [
+              { firstName: { contains: term, mode: 'insensitive' } },
+              { lastName: { contains: term, mode: 'insensitive' } },
+              { email: { contains: term, mode: 'insensitive' } },
+              { phone: { contains: term, mode: 'insensitive' } },
+            ],
+          },
+        },
+      });
+
+      where.OR = or;
     }
 
     return (this.prisma as any).quote.findMany({

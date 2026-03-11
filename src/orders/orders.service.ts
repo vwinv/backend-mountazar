@@ -202,15 +202,38 @@ export class OrdersService {
     return order;
   }
 
-  async findAll(status?: string, requiresQuote?: boolean) {
+  async findAll(status?: string, requiresQuote?: boolean, search?: string) {
     const where: any = {};
-    
+
     if (status) {
       where.status = status;
     }
-    
+
     if (requiresQuote !== undefined) {
       where.requiresQuote = requiresQuote;
+    }
+
+    if (search && search.trim().length > 0) {
+      const term = search.trim();
+      const or: any[] = [];
+
+      const idAsNumber = Number(term);
+      if (!Number.isNaN(idAsNumber) && Number.isInteger(idAsNumber)) {
+        or.push({ id: idAsNumber });
+      }
+
+      or.push({
+        user: {
+          OR: [
+            { firstName: { contains: term, mode: 'insensitive' } },
+            { lastName: { contains: term, mode: 'insensitive' } },
+            { email: { contains: term, mode: 'insensitive' } },
+            { phone: { contains: term, mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      where.OR = or;
     }
 
     return this.prisma.order.findMany({

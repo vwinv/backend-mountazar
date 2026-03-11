@@ -35,8 +35,8 @@ export class QuotesController {
   }
 
   @Get()
-  findAll(@Query('status') status?: string) {
-    return this.quotesService.findAll(status);
+  findAll(@Query('status') status?: string, @Query('search') search?: string) {
+    return this.quotesService.findAll(status, search);
   }
 
   @Get(':id')

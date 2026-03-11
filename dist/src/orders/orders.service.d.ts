@@ -55,7 +55,7 @@ export declare class OrdersService {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    findAll(status?: string, requiresQuote?: boolean): Promise<({
+    findAll(status?: string, requiresQuote?: boolean, search?: string): Promise<({
         [x: string]: ({
             id: number;
             orderId: number;

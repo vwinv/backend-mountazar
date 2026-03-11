@@ -33,8 +33,8 @@ let QuotesController = class QuotesController {
         }
         return this.quotesService.create(createQuoteDto);
     }
-    findAll(status) {
-        return this.quotesService.findAll(status);
+    findAll(status, search) {
+        return this.quotesService.findAll(status, search);
     }
     findOne(id) {
         return this.quotesService.findOne(id);
@@ -64,8 +64,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('status')),
+    __param(1, (0, common_1.Query)('search')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], QuotesController.prototype, "findAll", null);
 __decorate([
