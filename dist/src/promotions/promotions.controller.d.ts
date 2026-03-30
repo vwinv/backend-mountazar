@@ -7,8 +7,8 @@ export declare class PromotionsController {
     constructor(promotionsService: PromotionsService);
     findActivePublic(): Promise<{
         id: number;
-        value: import("@prisma/client/runtime/library").Decimal;
         name: string;
+        value: import("@prisma/client/runtime/library").Decimal;
         description: string | null;
         type: import(".prisma/client").$Enums.PromotionType;
         banniere: string | null;
@@ -77,8 +77,8 @@ export declare class PromotionsController {
         products: ({
             product: {
                 id: number;
-                image: string | null;
                 name: string;
+                image: string | null;
                 price: import("@prisma/client/runtime/library").Decimal;
             };
         } & {
@@ -154,8 +154,8 @@ export declare class PromotionsController {
         products: ({
             product: {
                 id: number;
-                image: string | null;
                 name: string;
+                image: string | null;
                 price: import("@prisma/client/runtime/library").Decimal;
             };
         } & {
@@ -185,8 +185,8 @@ export declare class PromotionsController {
         products: ({
             product: {
                 id: number;
-                image: string | null;
                 name: string;
+                image: string | null;
                 price: import("@prisma/client/runtime/library").Decimal;
             };
         } & {

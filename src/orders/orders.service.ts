@@ -456,15 +456,26 @@ export class OrdersService {
           (sum: number, item: any) => sum + (Number(item.total) || 0),
           0,
         );
-        const transportFee = Number(details.transportFee) || 0;
-        discount = Number(details.discount) || 0;
+        const transportFee = Math.max(0, Number(details.transportFee) || 0);
+        const discountRaw = Number(details.discount) || 0;
+        const discountMode =
+          details.discountMode === 'percent' ? 'percent' : 'amount';
+        if (discountMode === 'percent') {
+          const p = Math.min(100, Math.max(0, discountRaw));
+          discount = Math.round(itemsTotal * (p / 100));
+        } else {
+          discount = Math.max(0, discountRaw);
+        }
+        const baseAfterTransport = Math.max(0, itemsTotal - transportFee);
+        const maxDisc = baseAfterTransport;
+        discount = Math.min(discount, maxDisc);
 
         subtotal = itemsTotal;
         // On privilégie le total stocké sur le devis,
         // sinon on le recalcule à partir des détails.
         total =
           (q.total !== undefined ? Number(q.total) : NaN) ||
-          itemsTotal + transportFee - discount;
+          baseAfterTransport - discount;
         shipping = transportFee;
         quoteId = q.id;
       } else {
@@ -494,11 +505,27 @@ export class OrdersService {
       throw new BadRequestException('Le paiement a déjà été validé');
     }
 
+    // Si un acompte a déjà été encaissé, le paiement final correspond au reliquat.
+    const quoteDetails: any = order.quote?.quoteDetails || {};
+    const depositPaid = quoteDetails.depositPaid === true;
+    const depositAmountRaw = Number(quoteDetails.depositAmount) || 0;
+    const depositMode =
+      quoteDetails.depositMode === 'percent' ? 'percent' : 'amount';
+    const computedDeposit =
+      depositMode === 'percent'
+        ? Math.round(Math.max(0, Number(invoice.total)) * (Math.min(100, Math.max(0, depositAmountRaw)) / 100))
+        : Math.max(0, depositAmountRaw);
+    const depositAmount = depositPaid
+      ? Math.min(Math.max(0, Number(invoice.total)), computedDeposit)
+      : 0;
+    const paymentAmount = Math.max(0, Number(invoice.total) - depositAmount);
+
     // Mettre à jour le statut du paiement
     if (invoice.payment) {
       await (this.prisma as any).payment.update({
         where: { id: invoice.payment.id },
         data: {
+          amount: paymentAmount,
           status: 'COMPLETED',
           paidAt: new Date(),
         },
@@ -508,7 +535,7 @@ export class OrdersService {
       await (this.prisma as any).payment.create({
         data: {
           invoiceId: invoice.id,
-          amount: invoice.total,
+          amount: paymentAmount,
           method: 'OTHER',
           status: 'COMPLETED',
           paidAt: new Date(),
@@ -551,6 +578,68 @@ export class OrdersService {
             payment: true,
           },
         },
+      } as any,
+    });
+  }
+
+  async validateDepositPayment(id: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        quote: true,
+        invoice: { include: { payment: true } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Commande avec l'ID ${id} introuvable`);
+    }
+
+    if (!order.quote) {
+      throw new BadRequestException('Aucun devis associé à cette commande');
+    }
+
+    const details: any = order.quote.quoteDetails || {};
+    const depositRaw = Math.max(0, Number(details.depositAmount) || 0);
+    const depositMode =
+      details.depositMode === 'percent' ? 'percent' : 'amount';
+    const quoteTotal = Math.max(0, Number(order.quote.total) || 0);
+    const depositAmount =
+      depositMode === 'percent'
+        ? Math.round(quoteTotal * (Math.min(100, depositRaw) / 100))
+        : Math.min(quoteTotal, depositRaw);
+
+    if (depositAmount <= 0) {
+      throw new BadRequestException('Aucun acompte défini sur ce devis');
+    }
+
+    if (details.depositPaid === true) {
+      throw new BadRequestException("L'acompte a déjà été confirmé");
+    }
+
+    const updatedDetails = {
+      ...details,
+      depositAmount: depositRaw,
+      depositMode,
+      depositPaid: true,
+      depositPaidAt: new Date().toISOString(),
+    };
+
+    await (this.prisma as any).quote.update({
+      where: { id: order.quote.id },
+      data: {
+        quoteDetails: updatedDetails,
+      },
+    });
+
+    return this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        items: { include: { product: true } },
+        shippingAddress: true,
+        quote: true,
+        invoice: { include: { payment: true } },
       } as any,
     });
   }
@@ -858,19 +947,29 @@ export class OrdersService {
       ? Math.round(((customersThisMonth - customersLastMonth) / customersLastMonth) * 100)
       : customersThisMonth > 0 ? 100 : 0;
 
-    // Promotions actives (dont la date de fin est dans le futur et la date de début est dans le passé ou aujourd'hui)
-    const activePromotions = await this.prisma.promotion.count({
+    // Total encaissé : somme des totaux de facture avec paiement COMPLETED
+    // (hors commandes annulées). Inclut les paiements en ligne (commande souvent
+    // encore PROCESSING / DELIVERED) et la validation admin (COMPLETED).
+    const paidInvoices = await this.prisma.invoice.findMany({
       where: {
-        startDate: {
-          lte: now,
+        payment: {
+          status: 'COMPLETED',
         },
-        endDate: {
-          gte: now,
+        order: {
+          status: { not: 'CANCELLED' },
         },
-        isActive: true,
+      },
+      select: {
+        total: true,
       },
     });
-    console.log('Promotions actives:', activePromotions);
+
+    const totalEncaisse = paidInvoices.reduce(
+      (sum, inv) => sum + Math.round(Number(inv.total) || 0),
+      0,
+    );
+
+    console.log('Total encaissé (CFA, factures payées):', totalEncaisse);
 
     const stats = {
       orders: {
@@ -886,9 +985,7 @@ export class OrdersService {
         thisMonth: customersThisMonth,
         growthPercent: customersGrowthPercent,
       },
-      promotions: {
-        active: activePromotions,
-      },
+      totalEncaisse,
     };
 
     console.log('Statistiques du tableau de bord calculées:', stats);

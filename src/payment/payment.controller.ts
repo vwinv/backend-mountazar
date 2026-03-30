@@ -3,13 +3,10 @@ import {
   Post,
   Body,
   UseGuards,
-  ParseIntPipe,
-  Param,
-  Get,
   BadRequestException,
 } from '@nestjs/common';
-import { PayDunyaService } from './paydunya.service';
-import { CreatePaymentDto, PayDunyaPaymentMethod } from './dto/create-payment.dto';
+import { PaymentService } from './payment.service';
+import { CreatePaymentDto } from './dto/create-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,19 +14,10 @@ import { PrismaService } from '../prisma/prisma.service';
 @Controller('api/payments')
 export class PaymentsController {
   constructor(
-    private readonly payDunyaService: PayDunyaService,
+    private readonly paymentService: PaymentService,
     private readonly prisma: PrismaService,
   ) {
     console.log('PaymentsController initialized');
-  }
-
-  /**
-   * Crée un checkout invoice PayDunya
-   */
-  @Post('checkout/:orderId')
-  @UseGuards(JwtAuthGuard)
-  async createCheckout(@Param('orderId', ParseIntPipe) orderId: number) {
-    return this.payDunyaService.createCheckoutInvoice(orderId);
   }
 
   /**
@@ -46,7 +34,7 @@ export class PaymentsController {
       });
 
       await this.verifyOrderOwnership(createPaymentDto.orderId, user.id);
-      return await this.payDunyaService.payWithWaveSN(createPaymentDto);
+      return await this.paymentService.payWithWaveSN(createPaymentDto);
     } catch (error) {
       console.error('Error in payWithWaveSN:', error);
       throw error;
@@ -60,31 +48,15 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async payWithOrangeMoneySN(@Body() createPaymentDto: CreatePaymentDto, @CurrentUser() user: any) {
     await this.verifyOrderOwnership(createPaymentDto.orderId, user.id);
-    return this.payDunyaService.payWithOrangeMoneySN(createPaymentDto);
+    return this.paymentService.payWithOrangeMoneySN(createPaymentDto);
   }
 
   /**
-   * Route de test pour vérifier que le module est chargé
-   */
-  @Get('test')
-  test() {
-    return { message: 'Payment module is working', timestamp: new Date().toISOString() };
-  }
-
-  /**
-   * Route de test POST pour vérifier que les routes POST fonctionnent
-   */
-  @Post('test')
-  testPost(@Body() body: any) {
-    return { message: 'POST route is working', body, timestamp: new Date().toISOString() };
-  }
-
-  /**
-   * Callback PayDunya (webhook)
+   * Webhook Samir Pay (URL à configurer côté tableau Samir / support).
    */
   @Post('callback')
   async handleCallback(@Body() data: any) {
-    return this.payDunyaService.handleCallback(data);
+    return this.paymentService.handleCallback(data);
   }
 
   /**

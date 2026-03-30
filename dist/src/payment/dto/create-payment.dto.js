@@ -9,14 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreatePaymentDto = exports.PayDunyaPaymentMethod = void 0;
+exports.CreatePaymentDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
-var PayDunyaPaymentMethod;
-(function (PayDunyaPaymentMethod) {
-    PayDunyaPaymentMethod["WAVE"] = "WAVE_SN";
-    PayDunyaPaymentMethod["ORANGE_MONEY"] = "ORANGE_MONEY_SN";
-})(PayDunyaPaymentMethod || (exports.PayDunyaPaymentMethod = PayDunyaPaymentMethod = {}));
 class CreatePaymentDto {
     orderId;
     phoneNumber;

@@ -14,21 +14,18 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsController = void 0;
 const common_1 = require("@nestjs/common");
-const paydunya_service_1 = require("./paydunya.service");
+const payment_service_1 = require("./payment.service");
 const create_payment_dto_1 = require("./dto/create-payment.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const prisma_service_1 = require("../prisma/prisma.service");
 let PaymentsController = class PaymentsController {
-    payDunyaService;
+    paymentService;
     prisma;
-    constructor(payDunyaService, prisma) {
-        this.payDunyaService = payDunyaService;
+    constructor(paymentService, prisma) {
+        this.paymentService = paymentService;
         this.prisma = prisma;
         console.log('PaymentsController initialized');
-    }
-    async createCheckout(orderId) {
-        return this.payDunyaService.createCheckoutInvoice(orderId);
     }
     async payWithWaveSN(createPaymentDto, user) {
         try {
@@ -38,7 +35,7 @@ let PaymentsController = class PaymentsController {
                 userId: user?.id
             });
             await this.verifyOrderOwnership(createPaymentDto.orderId, user.id);
-            return await this.payDunyaService.payWithWaveSN(createPaymentDto);
+            return await this.paymentService.payWithWaveSN(createPaymentDto);
         }
         catch (error) {
             console.error('Error in payWithWaveSN:', error);
@@ -47,16 +44,10 @@ let PaymentsController = class PaymentsController {
     }
     async payWithOrangeMoneySN(createPaymentDto, user) {
         await this.verifyOrderOwnership(createPaymentDto.orderId, user.id);
-        return this.payDunyaService.payWithOrangeMoneySN(createPaymentDto);
-    }
-    test() {
-        return { message: 'Payment module is working', timestamp: new Date().toISOString() };
-    }
-    testPost(body) {
-        return { message: 'POST route is working', body, timestamp: new Date().toISOString() };
+        return this.paymentService.payWithOrangeMoneySN(createPaymentDto);
     }
     async handleCallback(data) {
-        return this.payDunyaService.handleCallback(data);
+        return this.paymentService.handleCallback(data);
     }
     async verifyOrderOwnership(orderId, userId) {
         const order = await this.prisma.order.findUnique({
@@ -71,14 +62,6 @@ let PaymentsController = class PaymentsController {
     }
 };
 exports.PaymentsController = PaymentsController;
-__decorate([
-    (0, common_1.Post)('checkout/:orderId'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __param(0, (0, common_1.Param)('orderId', common_1.ParseIntPipe)),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], PaymentsController.prototype, "createCheckout", null);
 __decorate([
     (0, common_1.Post)('wave-sn'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
@@ -98,19 +81,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "payWithOrangeMoneySN", null);
 __decorate([
-    (0, common_1.Get)('test'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], PaymentsController.prototype, "test", null);
-__decorate([
-    (0, common_1.Post)('test'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], PaymentsController.prototype, "testPost", null);
-__decorate([
     (0, common_1.Post)('callback'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -119,7 +89,7 @@ __decorate([
 ], PaymentsController.prototype, "handleCallback", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, common_1.Controller)('api/payments'),
-    __metadata("design:paramtypes", [paydunya_service_1.PayDunyaService,
+    __metadata("design:paramtypes", [payment_service_1.PaymentService,
         prisma_service_1.PrismaService])
 ], PaymentsController);
 //# sourceMappingURL=payment.controller.js.map

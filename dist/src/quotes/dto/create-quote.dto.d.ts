@@ -13,5 +13,6 @@ export declare class CreateQuoteDto {
         }>;
         transportFee?: number;
         discount?: number;
+        discountMode?: 'amount' | 'percent';
     };
 }

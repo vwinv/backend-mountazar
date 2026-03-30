@@ -1,51 +1,20 @@
-import { PayDunyaService } from './paydunya.service';
+import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PrismaService } from '../prisma/prisma.service';
 export declare class PaymentsController {
-    private readonly payDunyaService;
+    private readonly paymentService;
     private readonly prisma;
-    constructor(payDunyaService: PayDunyaService, prisma: PrismaService);
-    createCheckout(orderId: number): Promise<{
-        paymentToken: any;
-        checkoutUrl: any;
-        invoice: {
-            id: number;
-            invoiceNumber: string;
-            orderId: number;
-            quoteId: number | null;
-            subtotal: import("@prisma/client/runtime/library").Decimal;
-            tax: import("@prisma/client/runtime/library").Decimal;
-            shipping: import("@prisma/client/runtime/library").Decimal;
-            discount: import("@prisma/client/runtime/library").Decimal;
-            total: import("@prisma/client/runtime/library").Decimal;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-        payment: {
-            id: number;
-            invoiceId: number;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            transactionId: string | null;
-            receiptUrl: string | null;
-            invoiceData: string | null;
-            paidAt: Date | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
+    constructor(paymentService: PaymentService, prisma: PrismaService);
+    payWithWaveSN(createPaymentDto: CreatePaymentDto, user: any): Promise<{
+        success: boolean;
+        url: string | null;
+        message: any;
     }>;
-    payWithWaveSN(createPaymentDto: CreatePaymentDto, user: any): Promise<any>;
-    payWithOrangeMoneySN(createPaymentDto: CreatePaymentDto, user: any): Promise<any>;
-    test(): {
-        message: string;
-        timestamp: string;
-    };
-    testPost(body: any): {
-        message: string;
-        body: any;
-        timestamp: string;
-    };
+    payWithOrangeMoneySN(createPaymentDto: CreatePaymentDto, user: any): Promise<{
+        success: boolean;
+        url: string | null;
+        message: any;
+    }>;
     handleCallback(data: any): Promise<{
         success: boolean;
         message: string;

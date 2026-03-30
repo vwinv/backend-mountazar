@@ -199,9 +199,7 @@ export declare class OrdersController {
             thisMonth: number;
             growthPercent: number;
         };
-        promotions: {
-            active: number;
-        };
+        totalEncaisse: number;
     }>;
     cancel(id: number): Promise<{
         [x: string]: ({
@@ -367,6 +365,47 @@ export declare class OrdersController {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    validateDepositPayment(id: number): Promise<({
+        [x: string]: ({
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        } | {
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        })[] | {
+            id: number;
+            orderId: number;
+            productId: number;
+            quantity: number;
+            price: import("@prisma/client/runtime/library").Decimal;
+            originalPrice: import("@prisma/client/runtime/library").Decimal | null;
+            promotionId: number | null;
+            customization: import(".prisma/client").Prisma.JsonValue | null;
+        }[];
+        [x: number]: never;
+        [x: symbol]: never;
+    } & {
+        id: number;
+        userId: number;
+        total: import("@prisma/client/runtime/library").Decimal;
+        status: import(".prisma/client").$Enums.OrderStatus;
+        requiresQuote: boolean;
+        shippingAddressId: number | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }) | null>;
     findOne(id: number): Promise<{
         [x: string]: ({
             id: number;

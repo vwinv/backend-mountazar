@@ -340,6 +340,17 @@ model Favorite {
   @@index([productId])
 }
 
+model IntechService {
+  id           Int      @id @default(autoincrement())
+  codeService  String   @unique
+  name         String
+  icon         String?
+  typeOperation String?
+  typeService  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Review {
   id         Int      @id @default(autoincrement())
   userId     Int

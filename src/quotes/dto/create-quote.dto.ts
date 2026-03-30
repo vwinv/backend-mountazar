@@ -40,7 +40,10 @@ export class CreateQuoteDto {
       total: number;
     }>;
     transportFee?: number;
+    /** Montant en CFA ou pourcentage (0–100) selon discountMode */
     discount?: number;
+    /** 'amount' = remise en CFA ; 'percent' = % du sous-total produits */
+    discountMode?: 'amount' | 'percent';
   };
 }
 

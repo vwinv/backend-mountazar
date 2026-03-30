@@ -88,6 +88,9 @@ let OrdersController = class OrdersController {
     validatePayment(id) {
         return this.ordersService.validatePayment(id);
     }
+    validateDepositPayment(id) {
+        return this.ordersService.validateDepositPayment(id);
+    }
     findOne(id) {
         return this.ordersService.findOne(id);
     }
@@ -223,6 +226,15 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "validatePayment", null);
+__decorate([
+    (0, common_1.Post)(':id/validate-deposit-payment'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "validateDepositPayment", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

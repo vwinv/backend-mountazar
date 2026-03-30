@@ -165,6 +165,13 @@ export class OrdersController {
     return this.ordersService.validatePayment(id);
   }
 
+  @Post(':id/validate-deposit-payment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  validateDepositPayment(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.validateDepositPayment(id);
+  }
+
   // Routes génériques avec :id
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

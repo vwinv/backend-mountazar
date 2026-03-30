@@ -1,0 +1,304 @@
+{
+	"info": {
+		"_postman_id": "8cba9af3-d909-4ab0-bdde-fc1118cd1ed7",
+		"name": "SAMIR API CALL PARTNERS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19363050",
+		"_collection_link": "https://planetary-star-882919.postman.co/workspace/New-Team-Workspace~20cf77c4-0cf7-4a62-996d-179c9b78d619/collection/19363050-8cba9af3-d909-4ab0-bdde-fc1118cd1ed7?action=share&source=collection_link&creator=19363050"
+	},
+	"item": [
+		{
+			"name": "CASHOUT ENDPOINT",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"phoneNumber\": \"773792023\",\r\n    \"operatorName\": \"WAVE\",\r\n    \"amount\": \"15\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/tiers/payments/send",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"tiers",
+						"payments",
+						"send"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CASHIN ENDPOINT",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"amount\": \"50\",\r\n    \"orderId\": \"ID FROM YOUR SYSTEM\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/tiers/initPayment",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"tiers",
+						"initPayment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TRANSACTION GET STATUS",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/tiers/payments/id-transaction/status",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"tiers",
+						"payments",
+						"id-transaction",
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET BALANCE ENDPOINT",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/tiers/payments/solde",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"tiers",
+						"payments",
+						"solde"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PARTNER WOYOFAL RELOAD",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"amount\": \"1000\",\r\n    \"meter_no\": \"14385463055\",\r\n    \"receveurmsisdn\": \"773792023\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/invoice/v1/WIZALL/woyofal-reload",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"invoice",
+						"v1",
+						"WIZALL",
+						"woyofal-reload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PARTNER AIRTIME RELOAD",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"amount\": \"100\",\r\n    \"network\": \"ORANGE\",\r\n    \"receiver_msisdn\": \"773792023\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/invoice/v1/WIZALL/airtime-reload",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"invoice",
+						"v1",
+						"WIZALL",
+						"airtime-reload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PARTNER RAPIDO RELOAD",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-API-KEY",
+						"value": "YOUR API KEY",
+						"type": "text"
+					},
+					{
+						"key": "X-SECRET-KEY",
+						"value": "YOUR SECRET KEY",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"montant\": \"1000\",\r\n    \"badge_num\": \"00075855783\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://sandbox.samirpay.com/samirpays/api/invoice/v1/WIZALL/rapido-reload",
+					"protocol": "https",
+					"host": [
+						"sandbox",
+						"samirpay",
+						"com"
+					],
+					"path": [
+						"samirpays",
+						"api",
+						"invoice",
+						"v1",
+						"WIZALL",
+						"rapido-reload"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

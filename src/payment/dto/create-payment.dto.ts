@@ -3,14 +3,8 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export enum PayDunyaPaymentMethod {
-  WAVE = 'WAVE_SN',
-  ORANGE_MONEY = 'ORANGE_MONEY_SN',
-}
 
 export class CreatePaymentDto {
   @IsInt()
