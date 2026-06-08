@@ -822,18 +822,21 @@ let OrdersService = class OrdersService {
         if (!order) {
             throw new common_1.NotFoundException(`Commande avec l'ID ${id} introuvable`);
         }
-        if (order.status !== 'CANCELLED') {
-            throw new common_1.BadRequestException('Impossible de supprimer une commande qui n\'est pas annulée');
-        }
-        if (order.invoice?.payment?.status === 'COMPLETED') {
-            throw new common_1.BadRequestException('Impossible de supprimer une commande avec un paiement complété');
-        }
-        console.log(`Suppression de la commande #${id} (annulée)`);
-        const deletedOrder = await this.prisma.order.delete({
-            where: { id },
+        console.log(`Suppression en cascade de la commande #${id}`);
+        await this.prisma.$transaction(async (tx) => {
+            if (order.invoice?.payment) {
+                await tx.payment.delete({ where: { id: order.invoice.payment.id } });
+            }
+            if (order.invoice) {
+                await tx.invoice.delete({ where: { id: order.invoice.id } });
+            }
+            if (order.quote) {
+                await tx.quote.delete({ where: { id: order.quote.id } });
+            }
+            await tx.order.delete({ where: { id } });
         });
-        console.log(`Commande #${id} supprimée avec succès`);
-        return deletedOrder;
+        console.log(`Commande #${id} supprimée avec succès (paiement, facture, devis inclus)`);
+        return { id, deleted: true };
     }
 };
 exports.OrdersService = OrdersService;

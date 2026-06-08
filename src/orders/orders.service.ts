@@ -993,7 +993,6 @@ export class OrdersService {
   }
 
   async remove(id: number) {
-    // Vérifier si la commande existe
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
@@ -1010,31 +1009,22 @@ export class OrdersService {
       throw new NotFoundException(`Commande avec l'ID ${id} introuvable`);
     }
 
-    // Vérifier que la commande est annulée
-    if (order.status !== 'CANCELLED') {
-      throw new BadRequestException(
-        'Impossible de supprimer une commande qui n\'est pas annulée',
-      );
-    }
+    console.log(`Suppression en cascade de la commande #${id}`);
 
-    // Vérifier qu'il n'y a pas de paiement complété
-    if (order.invoice?.payment?.status === 'COMPLETED') {
-      throw new BadRequestException(
-        'Impossible de supprimer une commande avec un paiement complété',
-      );
-    }
-
-    console.log(`Suppression de la commande #${id} (annulée)`);
-
-    // Supprimer la commande (les relations seront supprimées automatiquement grâce à onDelete: Cascade)
-    // - OrderItem sera supprimé (onDelete: Cascade)
-    // - Invoice sera supprimé si existe (relation 1-1)
-    // - Quote sera supprimé si existe (relation 1-1)
-    const deletedOrder = await this.prisma.order.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      if (order.invoice?.payment) {
+        await tx.payment.delete({ where: { id: order.invoice.payment.id } });
+      }
+      if (order.invoice) {
+        await tx.invoice.delete({ where: { id: order.invoice.id } });
+      }
+      if (order.quote) {
+        await tx.quote.delete({ where: { id: order.quote.id } });
+      }
+      await tx.order.delete({ where: { id } });
     });
 
-    console.log(`Commande #${id} supprimée avec succès`);
-    return deletedOrder;
+    console.log(`Commande #${id} supprimée avec succès (paiement, facture, devis inclus)`);
+    return { id, deleted: true };
   }
 }

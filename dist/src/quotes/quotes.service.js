@@ -344,12 +344,6 @@ let QuotesService = class QuotesService {
         if (!quote) {
             throw new common_1.NotFoundException(`Devis avec l'ID ${id} introuvable`);
         }
-        if (quote.invoice) {
-            throw new common_1.BadRequestException('Impossible de supprimer un devis associé à une facture');
-        }
-        if (quote.order?.invoice?.payment?.status === 'COMPLETED') {
-            throw new common_1.BadRequestException('Impossible de supprimer un devis dont la commande associée a un paiement complété');
-        }
         console.log(`Suppression du devis #${id}`);
         const deletedQuote = await this.prisma.quote.delete({
             where: { id },

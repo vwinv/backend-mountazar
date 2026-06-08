@@ -389,20 +389,6 @@ export class QuotesService {
       throw new NotFoundException(`Devis avec l'ID ${id} introuvable`);
     }
 
-    // Vérifier qu'il n'y a pas de facture associée avec un paiement complété
-    if (quote.invoice) {
-      throw new BadRequestException(
-        'Impossible de supprimer un devis associé à une facture',
-      );
-    }
-
-    // Vérifier que la commande associée n'a pas de paiement complété
-    if (quote.order?.invoice?.payment?.status === 'COMPLETED') {
-      throw new BadRequestException(
-        'Impossible de supprimer un devis dont la commande associée a un paiement complété',
-      );
-    }
-
     console.log(`Suppression du devis #${id}`);
 
     // Supprimer le devis (les relations seront supprimées automatiquement grâce à onDelete: Cascade)

@@ -449,13 +449,7 @@ export declare class OrdersController {
     }>;
     remove(id: number): Promise<{
         id: number;
-        userId: number;
-        total: import("@prisma/client/runtime/library").Decimal;
-        status: import(".prisma/client").$Enums.OrderStatus;
-        requiresQuote: boolean;
-        shippingAddressId: number | null;
-        createdAt: Date;
-        updatedAt: Date;
+        deleted: boolean;
     }>;
     update(id: number, updateOrderDto: UpdateOrderDto): Promise<{
         [x: string]: ({
