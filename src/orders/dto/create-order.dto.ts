@@ -42,8 +42,9 @@ class ShippingAddressDto {
   @IsString()
   city: string;
 
+  @IsOptional()
   @IsString()
-  postalCode: string;
+  postalCode?: string;
 
   @IsString()
   country: string;

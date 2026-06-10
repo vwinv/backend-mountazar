@@ -72,6 +72,38 @@ export class CloudinaryService {
     return Promise.all(uploadPromises);
   }
 
+  async uploadVideo(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<{ url: string; public_id: string }> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: `mountazar/${folder}`,
+          resource_type: 'video',
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else if (result) {
+            resolve({
+              url: result.secure_url,
+              public_id: result.public_id,
+            });
+          } else {
+            reject(new Error('Upload failed: no result returned from Cloudinary'));
+          }
+        },
+      );
+
+      const readableStream = new Readable();
+      readableStream.push(file.buffer);
+      readableStream.push(null);
+
+      readableStream.pipe(uploadStream);
+    });
+  }
+
   /**
    * Supprime une image de Cloudinary
    * @param publicId - ID public de l'image à supprimer

@@ -15,6 +15,7 @@ import { QuotesModule } from './quotes/quotes.module';
 import { OrdersModule } from './orders/orders.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { ShopReviewsModule } from './shop-reviews/shop-reviews.module';
 import { PaymentModule } from './payment/payment.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { PaymentModule } from './payment/payment.module';
     OrdersModule,
     FavoritesModule,
     ReviewsModule,
+    ShopReviewsModule,
     PaymentModule,
   ],
   controllers: [AppController],

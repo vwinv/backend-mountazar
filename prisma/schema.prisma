@@ -77,6 +77,7 @@ model User {
   notifications     Notification[]
   favorites         Favorite[]
   reviews           Review[]
+  shopReview        ShopReview?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 }
@@ -111,6 +112,7 @@ model Product {
   price                Decimal            @default(0)
   stock                Int                @default(0)
   image                String? // Image principale (maintenu pour compatibilité)
+  videoUrl             String? // URL vidéo (YouTube, Vimeo ou fichier hébergé)
   isActive             Boolean            @default(true) // Indique si le produit est actif
   isFeatured           Boolean            @default(false) // Indique si le produit est mis en avant
   isNew                Boolean            @default(false) // Indique si le produit est nouveau
@@ -122,6 +124,7 @@ model Product {
   promotions           ProductPromotion[]
   orderItems           OrderItem[]
   images               ProductImage[] // Toutes les photos du produit
+  videos               ProductVideo[] // Toutes les vidéos du produit
   favorites            Favorite[]
   reviews              Review[]
   createdAt            DateTime           @default(now())
@@ -134,6 +137,14 @@ model ProductImage {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   url       String // URL de la photo
   isMain    Boolean  @default(false) // Photo principale
+  createdAt DateTime @default(now())
+}
+
+model ProductVideo {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String // URL vidéo (YouTube, Vimeo ou fichier hébergé)
   createdAt DateTime @default(now())
 }
 
@@ -366,5 +377,18 @@ model Review {
   @@unique([userId, productId]) // Un utilisateur ne peut laisser qu'un seul avis par produit
   @@index([productId])
   @@index([userId])
+  @@index([isApproved])
+}
+
+model ShopReview {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Int
+  comment    String?
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@index([isApproved])
 }

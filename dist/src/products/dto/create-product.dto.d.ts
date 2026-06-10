@@ -9,5 +9,7 @@ export declare class CreateProductDto {
     isFeatured?: boolean;
     isNew?: boolean;
     images?: string[];
+    videoUrl?: string;
+    videos?: string[];
     customizationOptions?: any;
 }

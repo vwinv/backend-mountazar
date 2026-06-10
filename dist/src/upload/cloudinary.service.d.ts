@@ -8,6 +8,10 @@ export declare class CloudinaryService {
         url: string;
         public_id: string;
     }[]>;
+    uploadVideo(file: Express.Multer.File, folder: string): Promise<{
+        url: string;
+        public_id: string;
+    }>;
     deleteImage(publicId: string): Promise<any>;
     deleteImages(publicIds: string[]): Promise<any>;
 }

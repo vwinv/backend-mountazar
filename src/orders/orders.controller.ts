@@ -88,6 +88,18 @@ export class OrdersController {
     return this.ordersService.saveCustomerShippingAddress(user.id, body);
   }
 
+  @Delete('shipping-addresses/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteCustomerShippingAddress(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ) {
+    if (user.role !== UserRole.CUSTOMER) {
+      throw new ForbiddenException('Cette route est réservée aux clients');
+    }
+    return this.ordersService.deleteCustomerShippingAddress(user.id, id);
+  }
+
   // Routes admin (protégées)
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

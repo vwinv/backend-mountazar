@@ -26,6 +26,10 @@ let SubCategoriesController = class SubCategoriesController {
     constructor(subCategoriesService) {
         this.subCategoriesService = subCategoriesService;
     }
+    findAllPublic(categoryId) {
+        const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
+        return this.subCategoriesService.findAll(categoryIdNum);
+    }
     create(createSubCategoryDto) {
         return this.subCategoriesService.create(createSubCategoryDto);
     }
@@ -45,7 +49,16 @@ let SubCategoriesController = class SubCategoriesController {
 };
 exports.SubCategoriesController = SubCategoriesController;
 __decorate([
+    (0, common_1.Get)('public'),
+    __param(0, (0, common_1.Query)('categoryId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SubCategoriesController.prototype, "findAllPublic", null);
+__decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_sub_category_dto_1.CreateSubCategoryDto]),
@@ -53,6 +66,8 @@ __decorate([
 ], SubCategoriesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Query)('categoryId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -60,6 +75,8 @@ __decorate([
 ], SubCategoriesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -67,6 +84,8 @@ __decorate([
 ], SubCategoriesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -75,6 +94,8 @@ __decorate([
 ], SubCategoriesController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -82,8 +103,6 @@ __decorate([
 ], SubCategoriesController.prototype, "remove", null);
 exports.SubCategoriesController = SubCategoriesController = __decorate([
     (0, common_1.Controller)('api/sub-categories'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __metadata("design:paramtypes", [sub_categories_service_1.SubCategoriesService])
 ], SubCategoriesController);
 //# sourceMappingURL=sub-categories.controller.js.map

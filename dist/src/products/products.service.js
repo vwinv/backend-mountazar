@@ -21,6 +21,74 @@ let ProductsService = class ProductsService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    normalizeVideoUrls(videos, videoUrl) {
+        const seen = new Set();
+        const result = [];
+        const add = (value) => {
+            const trimmed = value?.trim();
+            if (!trimmed || seen.has(trimmed))
+                return;
+            seen.add(trimmed);
+            result.push(trimmed);
+        };
+        (videos || []).forEach(add);
+        if (result.length === 0) {
+            add(videoUrl);
+        }
+        return result;
+    }
+    async loadProductVideos(productId, legacyVideoUrl) {
+        const videos = await this.prisma.productVideo.findMany({
+            where: { productId },
+            orderBy: { createdAt: 'asc' },
+        });
+        if (videos.length === 0 && legacyVideoUrl?.trim()) {
+            return [{ id: 0, productId, url: legacyVideoUrl.trim(), createdAt: new Date() }];
+        }
+        return videos;
+    }
+    async saveProductVideos(productId, videoUrls) {
+        await this.prisma.productVideo.deleteMany({
+            where: { productId },
+        });
+        if (videoUrls.length > 0) {
+            await this.prisma.productVideo.createMany({
+                data: videoUrls.map((url) => ({ productId, url })),
+            });
+        }
+        return this.loadProductVideos(productId, videoUrls[0] ?? null);
+    }
+    async loadSubCategory(subCategoryId) {
+        if (!subCategoryId)
+            return null;
+        return this.prisma.subCategory.findUnique({
+            where: { id: subCategoryId },
+            include: {
+                category: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
+    async buildProductResponse(product, images, videos) {
+        const productImages = images ??
+            (await this.prisma.productImage.findMany({
+                where: { productId: product.id },
+                orderBy: { isMain: 'desc' },
+            }));
+        const productVideos = videos ?? (await this.loadProductVideos(product.id, product.videoUrl));
+        const subCategory = await this.loadSubCategory(product.subCategoryId);
+        return {
+            ...product,
+            images: productImages,
+            videos: productVideos,
+            videoUrl: productVideos[0]?.url ?? product.videoUrl ?? null,
+            subCategory,
+        };
+    }
     async generateDescription(keywords) {
         const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
@@ -54,12 +122,14 @@ let ProductsService = class ProductsService {
         return { description };
     }
     async create(createProductDto) {
-        const { images, categoryId, subCategoryId, ...restData } = createProductDto;
+        const { images, videos, videoUrl, categoryId, subCategoryId, ...restData } = createProductDto;
+        const videoUrls = this.normalizeVideoUrls(videos, videoUrl);
         if (!categoryId && !subCategoryId) {
             throw new Error('Le produit doit avoir une catégorie ou une sous-catégorie');
         }
         const data = {
             ...restData,
+            videoUrl: videoUrls[0] ?? null,
         };
         if (categoryId) {
             data.category = { connect: { id: categoryId } };
@@ -81,28 +151,11 @@ let ProductsService = class ProductsService {
                     isMain: index === 0,
                 })),
             });
-            const reloaded = await this.prisma.product.findUnique({
-                where: { id: product.id },
-                include: {
-                    category: true,
-                },
-            });
-            const subCategory = product.subCategoryId
-                ? await this.prisma.subCategory.findUnique({
-                    where: { id: product.subCategoryId },
-                    include: {
-                        category: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                    },
-                })
-                : null;
-            return { ...reloaded, subCategory };
         }
-        return product;
+        if (videoUrls.length > 0) {
+            await this.saveProductVideos(product.id, videoUrls);
+        }
+        return this.buildProductResponse(product);
     }
     async findAll() {
         const products = await this.prisma.product.findMany({
@@ -121,19 +174,8 @@ let ProductsService = class ProductsService {
                 where: { productId: product.id },
                 orderBy: { isMain: 'desc' },
             });
-            const subCategory = product.subCategoryId
-                ? await this.prisma.subCategory.findUnique({
-                    where: { id: product.subCategoryId },
-                    include: {
-                        category: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                    },
-                })
-                : null;
+            const videos = await this.loadProductVideos(product.id, product.videoUrl);
+            const subCategory = await this.loadSubCategory(product.subCategoryId);
             const reviews = await this.prisma.review.findMany({
                 where: {
                     productId: product.id,
@@ -151,7 +193,16 @@ let ProductsService = class ProductsService {
                 maxRating = Math.max(...ratings);
                 averageRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
             }
-            return { ...product, images, subCategory, maxRating, averageRating, reviewsCount };
+            return {
+                ...product,
+                images,
+                videos,
+                videoUrl: videos[0]?.url ?? product.videoUrl ?? null,
+                subCategory,
+                maxRating,
+                averageRating,
+                reviewsCount,
+            };
         }));
         return productsWithImages;
     }
@@ -188,6 +239,7 @@ let ProductsService = class ProductsService {
                 where: { productId: product.id },
                 orderBy: { isMain: 'desc' },
             });
+            const videos = await this.loadProductVideos(product.id, product.videoUrl);
             const reviews = await this.prisma.review.findMany({
                 where: {
                     productId: product.id,
@@ -201,22 +253,37 @@ let ProductsService = class ProductsService {
             if (reviews.length > 0) {
                 maxRating = Math.max(...reviews.map((r) => r.rating));
             }
-            return { ...product, images, maxRating };
+            return {
+                ...product,
+                images,
+                videos,
+                videoUrl: videos[0]?.url ?? product.videoUrl ?? null,
+                maxRating,
+            };
         }));
         return productsWithImages;
     }
-    async findPublic(categoryId, search) {
+    async findPublic(categoryId, search, subCategoryId) {
         const where = {
             isActive: true,
         };
-        if (categoryId) {
-            where.categoryId = categoryId;
+        if (subCategoryId) {
+            where.subCategoryId = subCategoryId;
+        }
+        else if (categoryId) {
+            where.OR = [
+                { categoryId },
+                { subCategory: { categoryId } },
+            ];
         }
         if (search && search.trim()) {
-            where.OR = [
-                { name: { contains: search.trim(), mode: 'insensitive' } },
-                { description: { contains: search.trim(), mode: 'insensitive' } },
-            ];
+            const searchFilter = {
+                OR: [
+                    { name: { contains: search.trim(), mode: 'insensitive' } },
+                    { description: { contains: search.trim(), mode: 'insensitive' } },
+                ],
+            };
+            where.AND = where.AND ? [...where.AND, searchFilter] : [searchFilter];
         }
         const products = await this.prisma.product.findMany({
             where,
@@ -225,6 +292,13 @@ let ProductsService = class ProductsService {
                     select: {
                         id: true,
                         name: true,
+                    },
+                },
+                subCategory: {
+                    select: {
+                        id: true,
+                        name: true,
+                        categoryId: true,
                     },
                 },
                 promotions: {
@@ -247,6 +321,7 @@ let ProductsService = class ProductsService {
                 where: { productId: product.id },
                 orderBy: { isMain: 'desc' },
             });
+            const videos = await this.loadProductVideos(product.id, product.videoUrl);
             const reviews = await this.prisma.review.findMany({
                 where: {
                     productId: product.id,
@@ -260,7 +335,13 @@ let ProductsService = class ProductsService {
             if (reviews.length > 0) {
                 maxRating = Math.max(...reviews.map((r) => r.rating));
             }
-            return { ...product, images, maxRating };
+            return {
+                ...product,
+                images,
+                videos,
+                videoUrl: videos[0]?.url ?? product.videoUrl ?? null,
+                maxRating,
+            };
         }));
         return productsWithImages;
     }
@@ -295,19 +376,8 @@ let ProductsService = class ProductsService {
             where: { productId: id },
             orderBy: { isMain: 'desc' },
         });
-        const subCategory = product.subCategoryId
-            ? await this.prisma.subCategory.findUnique({
-                where: { id: product.subCategoryId },
-                include: {
-                    category: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
-            })
-            : null;
+        const videos = await this.loadProductVideos(id, product.videoUrl);
+        const subCategory = await this.loadSubCategory(product.subCategoryId);
         const reviews = await this.prisma.review.findMany({
             where: {
                 productId: id,
@@ -333,7 +403,17 @@ let ProductsService = class ProductsService {
             averageRating = Math.round((sum / reviews.length) * 10) / 10;
             maxRating = Math.max(...reviews.map((r) => r.rating));
         }
-        return { ...product, images, subCategory, averageRating, maxRating, reviews, reviewsCount: reviews.length };
+        return {
+            ...product,
+            images,
+            videos,
+            videoUrl: videos[0]?.url ?? product.videoUrl ?? null,
+            subCategory,
+            averageRating,
+            maxRating,
+            reviews,
+            reviewsCount: reviews.length,
+        };
     }
     async findOne(id) {
         const product = await this.prisma.product.findUnique({
@@ -345,24 +425,7 @@ let ProductsService = class ProductsService {
         if (!product) {
             throw new common_1.NotFoundException(`Produit avec l'ID ${id} introuvable`);
         }
-        const images = await this.prisma.productImage.findMany({
-            where: { productId: id },
-            orderBy: { isMain: 'desc' },
-        });
-        const subCategory = product.subCategoryId
-            ? await this.prisma.subCategory.findUnique({
-                where: { id: product.subCategoryId },
-                include: {
-                    category: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
-            })
-            : null;
-        return { ...product, images, subCategory };
+        return this.buildProductResponse(product);
     }
     async update(id, updateProductDto) {
         const existing = await this.prisma.product.findUnique({
@@ -371,7 +434,7 @@ let ProductsService = class ProductsService {
         if (!existing) {
             throw new common_1.NotFoundException(`Produit avec l'ID ${id} introuvable`);
         }
-        const { images, categoryId, subCategoryId, ...restData } = updateProductDto;
+        const { images, videos, videoUrl, categoryId, subCategoryId, ...restData } = updateProductDto;
         const finalCategoryId = categoryId !== undefined ? categoryId : existing.categoryId;
         const finalSubCategoryId = subCategoryId !== undefined ? subCategoryId : existing.subCategoryId;
         if (!finalCategoryId && !finalSubCategoryId) {
@@ -410,6 +473,16 @@ let ProductsService = class ProductsService {
                 });
             }
         }
+        let videoUrls;
+        if (videos !== undefined) {
+            videoUrls = this.normalizeVideoUrls(videos || [], null);
+        }
+        else if (videoUrl !== undefined) {
+            videoUrls = this.normalizeVideoUrls([], videoUrl);
+        }
+        if (videoUrls !== undefined) {
+            data.videoUrl = videoUrls[0] ?? null;
+        }
         const updatedProduct = await this.prisma.product.update({
             where: { id },
             data,
@@ -417,24 +490,11 @@ let ProductsService = class ProductsService {
                 category: true,
             },
         });
-        const productImages = await this.prisma.productImage.findMany({
-            where: { productId: id },
-            orderBy: { isMain: 'desc' },
-        });
-        const subCategory = updatedProduct.subCategoryId
-            ? await this.prisma.subCategory.findUnique({
-                where: { id: updatedProduct.subCategoryId },
-                include: {
-                    category: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
-            })
-            : null;
-        return { ...updatedProduct, images: productImages, subCategory };
+        let productVideos;
+        if (videoUrls !== undefined) {
+            productVideos = await this.saveProductVideos(id, videoUrls);
+        }
+        return this.buildProductResponse(updatedProduct, undefined, productVideos);
     }
     async remove(id) {
         const existing = await this.prisma.product.findUnique({

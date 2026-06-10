@@ -29,9 +29,10 @@ let ProductsController = class ProductsController {
     findFeatured() {
         return this.productsService.findFeatured();
     }
-    findPublicCatalogue(categoryId, search) {
+    findPublicCatalogue(categoryId, subCategoryId, search) {
         const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
-        return this.productsService.findPublic(categoryIdNum, search);
+        const subCategoryIdNum = subCategoryId ? parseInt(subCategoryId, 10) : undefined;
+        return this.productsService.findPublic(categoryIdNum, search, subCategoryIdNum);
     }
     findOnePublic(id) {
         return this.productsService.findOnePublic(id);
@@ -65,9 +66,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)('public/catalogue'),
     __param(0, (0, common_1.Query)('category')),
-    __param(1, (0, common_1.Query)('search')),
+    __param(1, (0, common_1.Query)('subCategory')),
+    __param(2, (0, common_1.Query)('search')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "findPublicCatalogue", null);
 __decorate([
@@ -112,6 +114,8 @@ __decorate([
 ], ProductsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -120,6 +124,8 @@ __decorate([
 ], ProductsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),

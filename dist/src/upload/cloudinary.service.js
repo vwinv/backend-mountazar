@@ -56,6 +56,31 @@ let CloudinaryService = class CloudinaryService {
         const uploadPromises = files.map((file) => this.uploadImage(file, folder));
         return Promise.all(uploadPromises);
     }
+    async uploadVideo(file, folder) {
+        return new Promise((resolve, reject) => {
+            const uploadStream = cloudinary_1.v2.uploader.upload_stream({
+                folder: `mountazar/${folder}`,
+                resource_type: 'video',
+            }, (error, result) => {
+                if (error) {
+                    reject(error);
+                }
+                else if (result) {
+                    resolve({
+                        url: result.secure_url,
+                        public_id: result.public_id,
+                    });
+                }
+                else {
+                    reject(new Error('Upload failed: no result returned from Cloudinary'));
+                }
+            });
+            const readableStream = new stream_1.Readable();
+            readableStream.push(file.buffer);
+            readableStream.push(null);
+            readableStream.pipe(uploadStream);
+        });
+    }
     async deleteImage(publicId) {
         return cloudinary_1.v2.uploader.destroy(publicId);
     }

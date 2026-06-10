@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -27,6 +27,90 @@ export class OrdersService {
    * Si une adresse strictement identique existe déjà pour ce client,
    * elle est réutilisée au lieu de créer un doublon.
    */
+  private normalizeShippingAddressPayload(payload: {
+    firstName: string;
+    lastName: string;
+    address: string;
+    city: string;
+    postalCode?: string;
+    country?: string;
+    phone?: string | null;
+  }) {
+    return {
+      firstName: (payload.firstName || '').trim(),
+      lastName: (payload.lastName || '').trim(),
+      address: (payload.address || '').trim(),
+      city: (payload.city || '').trim(),
+      postalCode: (payload.postalCode || '').trim(),
+      country: (payload.country || 'Sénégal').trim(),
+      phone: (payload.phone || '').trim() || null,
+    };
+  }
+
+  private shippingAddressesMatch(
+    a: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      postalCode?: string | null;
+      country: string;
+      phone?: string | null;
+    },
+    b: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      postalCode?: string | null;
+      country: string;
+      phone?: string | null;
+    },
+  ) {
+    const norm = (value?: string | null) => (value || '').trim().toLowerCase();
+    const normPhone = (value?: string | null) => (value || '').trim() || null;
+
+    return (
+      norm(a.firstName) === norm(b.firstName) &&
+      norm(a.lastName) === norm(b.lastName) &&
+      norm(a.address) === norm(b.address) &&
+      norm(a.city) === norm(b.city) &&
+      norm(a.postalCode) === norm(b.postalCode) &&
+      norm(a.country) === norm(b.country) &&
+      normPhone(a.phone) === normPhone(b.phone)
+    );
+  }
+
+  private shippingAddressesMatchWithoutPhone(
+    a: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      postalCode?: string | null;
+      country: string;
+    },
+    b: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      postalCode?: string | null;
+      country: string;
+    },
+  ) {
+    const norm = (value?: string | null) => (value || '').trim().toLowerCase();
+
+    return (
+      norm(a.firstName) === norm(b.firstName) &&
+      norm(a.lastName) === norm(b.lastName) &&
+      norm(a.address) === norm(b.address) &&
+      norm(a.city) === norm(b.city) &&
+      norm(a.postalCode) === norm(b.postalCode) &&
+      norm(a.country) === norm(b.country)
+    );
+  }
+
   async saveCustomerShippingAddress(
     userId: number,
     payload: {
@@ -39,32 +123,32 @@ export class OrdersService {
       phone?: string | null;
     },
   ) {
-    const normalized = {
-      firstName: (payload.firstName || '').trim(),
-      lastName: (payload.lastName || '').trim(),
-      address: (payload.address || '').trim(),
-      city: (payload.city || '').trim(),
-      postalCode: (payload.postalCode || '').trim() || null,
-      country: (payload.country || 'Sénégal').trim(),
-      phone: (payload.phone || '').trim() || null,
-    };
+    const normalized = this.normalizeShippingAddressPayload(payload);
 
-    // Chercher une adresse identique pour éviter les doublons
-    const existing = await (this.prisma as any).shippingAddress.findFirst({
-      where: {
-        userId,
-        firstName: normalized.firstName,
-        lastName: normalized.lastName,
-        address: normalized.address,
-        city: normalized.city,
-        postalCode: normalized.postalCode,
-        country: normalized.country,
-        phone: normalized.phone,
-      },
+    const existingAddresses = await (this.prisma as any).shippingAddress.findMany({
+      where: { userId },
     });
+
+    const existing = existingAddresses.find((addr: any) =>
+      this.shippingAddressesMatch(addr, normalized),
+    );
 
     if (existing) {
       return existing;
+    }
+
+    const existingWithoutPhone = existingAddresses.find((addr: any) =>
+      this.shippingAddressesMatchWithoutPhone(addr, normalized),
+    );
+
+    if (existingWithoutPhone) {
+      if (normalized.phone && !existingWithoutPhone.phone) {
+        return (this.prisma as any).shippingAddress.update({
+          where: { id: existingWithoutPhone.id },
+          data: { phone: normalized.phone },
+        });
+      }
+      return existingWithoutPhone;
     }
 
     // Créer une nouvelle adresse
@@ -83,6 +167,24 @@ export class OrdersService {
     });
   }
 
+  async deleteCustomerShippingAddress(userId: number, addressId: number) {
+    const address = await (this.prisma as any).shippingAddress.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!address) {
+      throw new NotFoundException(`Adresse avec l'ID ${addressId} introuvable`);
+    }
+
+    if (address.userId !== userId) {
+      throw new ForbiddenException('Vous ne pouvez pas supprimer cette adresse');
+    }
+
+    return (this.prisma as any).shippingAddress.delete({
+      where: { id: addressId },
+    });
+  }
+
   async create(createOrderDto: CreateOrderDto) {
     // Vérifier que l'utilisateur existe
     if (!createOrderDto.userId) {
@@ -97,22 +199,21 @@ export class OrdersService {
       throw new NotFoundException(`Utilisateur avec l'ID ${createOrderDto.userId} introuvable`);
     }
 
-    // Créer l'adresse de livraison si fournie
+    // Créer l'adresse de livraison si fournie (réutilise une adresse identique existante)
     let shippingAddressId = createOrderDto.shippingAddressId;
-    if (createOrderDto.shippingAddress && !shippingAddressId) {
-      const shippingAddress = await (this.prisma as any).shippingAddress.create({
-        data: {
-          userId: createOrderDto.userId,
-          firstName: createOrderDto.shippingAddress.firstName,
-          lastName: createOrderDto.shippingAddress.lastName,
-          address: createOrderDto.shippingAddress.address,
-          city: createOrderDto.shippingAddress.city,
-          postalCode: createOrderDto.shippingAddress.postalCode,
-          country: createOrderDto.shippingAddress.country,
-          phone: createOrderDto.shippingAddress.phone || null,
-          isDefault: false,
-        },
-      });
+    const shipping = createOrderDto.shippingAddress;
+    const hasShippingInfo =
+      !!shipping &&
+      !!shipping.firstName?.trim() &&
+      !!shipping.lastName?.trim() &&
+      !!shipping.address?.trim() &&
+      !!shipping.city?.trim();
+
+    if (hasShippingInfo && !shippingAddressId) {
+      const shippingAddress = await this.saveCustomerShippingAddress(
+        createOrderDto.userId,
+        shipping,
+      );
       shippingAddressId = shippingAddress.id;
     }
 

@@ -55,6 +55,12 @@ let OrdersController = class OrdersController {
         }
         return this.ordersService.saveCustomerShippingAddress(user.id, body);
     }
+    deleteCustomerShippingAddress(id, user) {
+        if (user.role !== client_1.UserRole.CUSTOMER) {
+            throw new common_1.ForbiddenException('Cette route est réservée aux clients');
+        }
+        return this.ordersService.deleteCustomerShippingAddress(user.id, id);
+    }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
@@ -145,6 +151,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "createCustomerShippingAddress", null);
+__decorate([
+    (0, common_1.Delete)('shipping-addresses/:id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "deleteCustomerShippingAddress", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

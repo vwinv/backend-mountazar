@@ -44,11 +44,28 @@ let UploadController = class UploadController {
     }
     async uploadProductImages(files) {
         if (!files || files.length === 0) {
-            return { urls: [] };
+            return { urls: [], url: null };
         }
-        const uploadResults = await this.cloudinaryService.uploadImages(files, 'products');
-        const urls = uploadResults.map((result) => result.url);
-        return { urls };
+        const videoFiles = files.filter((f) => f.mimetype?.startsWith('video/'));
+        const imageFiles = files.filter((f) => !f.mimetype?.startsWith('video/'));
+        const urls = [];
+        const videos = [];
+        if (imageFiles.length > 0) {
+            const uploadResults = await this.cloudinaryService.uploadImages(imageFiles, 'products');
+            urls.push(...uploadResults.map((result) => result.url));
+        }
+        if (videoFiles.length > 0) {
+            const uploadResults = await Promise.all(videoFiles.map((file) => this.cloudinaryService.uploadVideo(file, 'products/videos')));
+            videos.push(...uploadResults.map((result) => result.url));
+        }
+        return { urls, url: videos[0] ?? null, videos };
+    }
+    async uploadProductVideo(files) {
+        if (!files || files.length === 0) {
+            return { url: null };
+        }
+        const uploadResult = await this.cloudinaryService.uploadVideo(files[0], 'products/videos');
+        return { url: uploadResult.url };
     }
     async uploadPromotionBanner(files) {
         if (!files || files.length === 0) {
@@ -88,13 +105,25 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
     (0, common_1.UseInterceptors)((0, platform_express_1.AnyFilesInterceptor)({
         storage: (0, multer_1.memoryStorage)(),
-        limits: { fileSize: 10 * 1024 * 1024, files: 20 },
+        limits: { fileSize: 50 * 1024 * 1024, files: 20 },
     })),
     __param(0, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Array]),
     __metadata("design:returntype", Promise)
 ], UploadController.prototype, "uploadProductImages", null);
+__decorate([
+    (0, common_1.Post)('products/video'),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    (0, common_1.UseInterceptors)((0, platform_express_1.AnyFilesInterceptor)({
+        storage: (0, multer_1.memoryStorage)(),
+        limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+    })),
+    __param(0, (0, common_1.UploadedFiles)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Array]),
+    __metadata("design:returntype", Promise)
+], UploadController.prototype, "uploadProductVideo", null);
 __decorate([
     (0, common_1.Post)('promotions'),
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),

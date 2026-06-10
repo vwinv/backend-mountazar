@@ -97,6 +97,7 @@ export declare class OrdersController {
         country?: string;
         phone?: string | null;
     }, user: any): Promise<any>;
+    deleteCustomerShippingAddress(id: number, user: any): Promise<any>;
     create(createOrderDto: CreateOrderDto): Promise<{
         [x: string]: ({
             id: number;

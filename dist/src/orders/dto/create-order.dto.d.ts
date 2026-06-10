@@ -9,7 +9,7 @@ declare class ShippingAddressDto {
     lastName: string;
     address: string;
     city: string;
-    postalCode: string;
+    postalCode?: string;
     country: string;
     phone?: string;
 }

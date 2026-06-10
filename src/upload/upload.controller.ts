@@ -63,19 +63,57 @@ export class UploadController {
   @UseInterceptors(
     AnyFilesInterceptor({
       storage: memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024, files: 20 }, // 10MB par fichier, 20 fichiers max
+      limits: { fileSize: 50 * 1024 * 1024, files: 20 },
     }),
   )
   async uploadProductImages(@UploadedFiles() files: Express.Multer.File[]) {
     if (!files || files.length === 0) {
-      return { urls: [] };
+      return { urls: [], url: null };
     }
-    const uploadResults = await this.cloudinaryService.uploadImages(
-      files,
-      'products',
+
+    const videoFiles = files.filter((f) => f.mimetype?.startsWith('video/'));
+    const imageFiles = files.filter((f) => !f.mimetype?.startsWith('video/'));
+
+    const urls: string[] = [];
+    const videos: string[] = [];
+
+    if (imageFiles.length > 0) {
+      const uploadResults = await this.cloudinaryService.uploadImages(
+        imageFiles,
+        'products',
+      );
+      urls.push(...uploadResults.map((result) => result.url));
+    }
+
+    if (videoFiles.length > 0) {
+      const uploadResults = await Promise.all(
+        videoFiles.map((file) =>
+          this.cloudinaryService.uploadVideo(file, 'products/videos'),
+        ),
+      );
+      videos.push(...uploadResults.map((result) => result.url));
+    }
+
+    return { urls, url: videos[0] ?? null, videos };
+  }
+
+  @Post('products/video')
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      storage: memoryStorage(),
+      limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+    }),
+  )
+  async uploadProductVideo(@UploadedFiles() files: Express.Multer.File[]) {
+    if (!files || files.length === 0) {
+      return { url: null };
+    }
+    const uploadResult = await this.cloudinaryService.uploadVideo(
+      files[0],
+      'products/videos',
     );
-    const urls = uploadResults.map((result) => result.url);
-    return { urls };
+    return { url: uploadResult.url };
   }
 
   @Post('promotions')

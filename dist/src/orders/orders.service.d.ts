@@ -5,6 +5,9 @@ export declare class OrdersService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     getCustomerShippingAddresses(userId: number): Promise<any>;
+    private normalizeShippingAddressPayload;
+    private shippingAddressesMatch;
+    private shippingAddressesMatchWithoutPhone;
     saveCustomerShippingAddress(userId: number, payload: {
         firstName: string;
         lastName: string;
@@ -14,6 +17,7 @@ export declare class OrdersService {
         country?: string;
         phone?: string | null;
     }): Promise<any>;
+    deleteCustomerShippingAddress(userId: number, addressId: number): Promise<any>;
     create(createOrderDto: CreateOrderDto): Promise<{
         [x: string]: ({
             id: number;

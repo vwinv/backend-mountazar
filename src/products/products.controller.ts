@@ -32,10 +32,12 @@ export class ProductsController {
   @Get('public/catalogue')
   findPublicCatalogue(
     @Query('category') categoryId?: string,
+    @Query('subCategory') subCategoryId?: string,
     @Query('search') search?: string,
   ) {
     const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
-    return this.productsService.findPublic(categoryIdNum, search);
+    const subCategoryIdNum = subCategoryId ? parseInt(subCategoryId, 10) : undefined;
+    return this.productsService.findPublic(categoryIdNum, search, subCategoryIdNum);
   }
 
   // Route publique pour récupérer un produit par ID
@@ -72,6 +74,8 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
@@ -80,6 +84,8 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.remove(id);
   }

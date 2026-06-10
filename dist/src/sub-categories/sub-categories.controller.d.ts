@@ -4,6 +4,19 @@ import { UpdateSubCategoryDto } from './dto/update-sub-category.dto';
 export declare class SubCategoriesController {
     private readonly subCategoriesService;
     constructor(subCategoriesService: SubCategoriesService);
+    findAllPublic(categoryId?: string): Promise<({
+        category: {
+            id: number;
+            name: string;
+        };
+    } & {
+        id: number;
+        name: string;
+        description: string | null;
+        categoryId: number;
+        createdAt: Date;
+        updatedAt: Date;
+    })[]>;
     create(createSubCategoryDto: CreateSubCategoryDto): Promise<{
         category: {
             id: number;

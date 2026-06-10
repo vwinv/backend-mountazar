@@ -57,6 +57,18 @@ export class CreateProductDto {
   images?: string[];
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsString()
+  @MaxLength(2048)
+  videoUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(2048, { each: true })
+  videos?: string[];
+
+  @IsOptional()
   customizationOptions?: any;
 }
 

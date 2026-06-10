@@ -24,30 +24,55 @@ let OrdersService = class OrdersService {
             orderBy: { id: 'desc' },
         });
     }
-    async saveCustomerShippingAddress(userId, payload) {
-        const normalized = {
+    normalizeShippingAddressPayload(payload) {
+        return {
             firstName: (payload.firstName || '').trim(),
             lastName: (payload.lastName || '').trim(),
             address: (payload.address || '').trim(),
             city: (payload.city || '').trim(),
-            postalCode: (payload.postalCode || '').trim() || null,
+            postalCode: (payload.postalCode || '').trim(),
             country: (payload.country || 'Sénégal').trim(),
             phone: (payload.phone || '').trim() || null,
         };
-        const existing = await this.prisma.shippingAddress.findFirst({
-            where: {
-                userId,
-                firstName: normalized.firstName,
-                lastName: normalized.lastName,
-                address: normalized.address,
-                city: normalized.city,
-                postalCode: normalized.postalCode,
-                country: normalized.country,
-                phone: normalized.phone,
-            },
+    }
+    shippingAddressesMatch(a, b) {
+        const norm = (value) => (value || '').trim().toLowerCase();
+        const normPhone = (value) => (value || '').trim() || null;
+        return (norm(a.firstName) === norm(b.firstName) &&
+            norm(a.lastName) === norm(b.lastName) &&
+            norm(a.address) === norm(b.address) &&
+            norm(a.city) === norm(b.city) &&
+            norm(a.postalCode) === norm(b.postalCode) &&
+            norm(a.country) === norm(b.country) &&
+            normPhone(a.phone) === normPhone(b.phone));
+    }
+    shippingAddressesMatchWithoutPhone(a, b) {
+        const norm = (value) => (value || '').trim().toLowerCase();
+        return (norm(a.firstName) === norm(b.firstName) &&
+            norm(a.lastName) === norm(b.lastName) &&
+            norm(a.address) === norm(b.address) &&
+            norm(a.city) === norm(b.city) &&
+            norm(a.postalCode) === norm(b.postalCode) &&
+            norm(a.country) === norm(b.country));
+    }
+    async saveCustomerShippingAddress(userId, payload) {
+        const normalized = this.normalizeShippingAddressPayload(payload);
+        const existingAddresses = await this.prisma.shippingAddress.findMany({
+            where: { userId },
         });
+        const existing = existingAddresses.find((addr) => this.shippingAddressesMatch(addr, normalized));
         if (existing) {
             return existing;
+        }
+        const existingWithoutPhone = existingAddresses.find((addr) => this.shippingAddressesMatchWithoutPhone(addr, normalized));
+        if (existingWithoutPhone) {
+            if (normalized.phone && !existingWithoutPhone.phone) {
+                return this.prisma.shippingAddress.update({
+                    where: { id: existingWithoutPhone.id },
+                    data: { phone: normalized.phone },
+                });
+            }
+            return existingWithoutPhone;
         }
         return this.prisma.shippingAddress.create({
             data: {
@@ -63,6 +88,20 @@ let OrdersService = class OrdersService {
             },
         });
     }
+    async deleteCustomerShippingAddress(userId, addressId) {
+        const address = await this.prisma.shippingAddress.findUnique({
+            where: { id: addressId },
+        });
+        if (!address) {
+            throw new common_1.NotFoundException(`Adresse avec l'ID ${addressId} introuvable`);
+        }
+        if (address.userId !== userId) {
+            throw new common_1.ForbiddenException('Vous ne pouvez pas supprimer cette adresse');
+        }
+        return this.prisma.shippingAddress.delete({
+            where: { id: addressId },
+        });
+    }
     async create(createOrderDto) {
         if (!createOrderDto.userId) {
             throw new common_1.BadRequestException('L\'ID utilisateur est requis');
@@ -74,20 +113,14 @@ let OrdersService = class OrdersService {
             throw new common_1.NotFoundException(`Utilisateur avec l'ID ${createOrderDto.userId} introuvable`);
         }
         let shippingAddressId = createOrderDto.shippingAddressId;
-        if (createOrderDto.shippingAddress && !shippingAddressId) {
-            const shippingAddress = await this.prisma.shippingAddress.create({
-                data: {
-                    userId: createOrderDto.userId,
-                    firstName: createOrderDto.shippingAddress.firstName,
-                    lastName: createOrderDto.shippingAddress.lastName,
-                    address: createOrderDto.shippingAddress.address,
-                    city: createOrderDto.shippingAddress.city,
-                    postalCode: createOrderDto.shippingAddress.postalCode,
-                    country: createOrderDto.shippingAddress.country,
-                    phone: createOrderDto.shippingAddress.phone || null,
-                    isDefault: false,
-                },
-            });
+        const shipping = createOrderDto.shippingAddress;
+        const hasShippingInfo = !!shipping &&
+            !!shipping.firstName?.trim() &&
+            !!shipping.lastName?.trim() &&
+            !!shipping.address?.trim() &&
+            !!shipping.city?.trim();
+        if (hasShippingInfo && !shippingAddressId) {
+            const shippingAddress = await this.saveCustomerShippingAddress(createOrderDto.userId, shipping);
             shippingAddressId = shippingAddress.id;
         }
         let total = 0;
